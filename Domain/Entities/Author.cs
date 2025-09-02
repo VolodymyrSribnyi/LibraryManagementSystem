@@ -1,0 +1,19 @@
+﻿namespace Domain.Entities
+{
+//    + FirstName: string
+//+ Surname: string
+//+ MiddleName?: string
+//+ Age: int
+//+ Books: List<IBook>
+    public class Author
+    {
+        public Guid Id { get; set; } 
+        public string FirstName { get; set; }
+        public string Surname { get; set; }
+        public string? MiddleName { get; set; }
+        public int Age { get; set; }
+        public List<Book> Books { get; set; } 
+        public DateTime CreatedAt { get; set; } 
+        public bool IsDeleted { get; set; }
+    }
+}
