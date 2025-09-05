@@ -18,6 +18,6 @@ namespace Domain.Entities
         public virtual ApplicationUser User { get; set; }
         public bool IsValid { get; set; }
         public DateTime ValidTo { get; set; }
-
+        public bool IsDeleted { get; set; }
     }
 }

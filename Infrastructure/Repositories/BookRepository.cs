@@ -1,6 +1,7 @@
-﻿using Domain.Entities;
+﻿using Abstractions.Repositories;
+using Domain.Entities;
 using Domain.Enums;
-using Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,54 +27,108 @@ namespace Infrastructure.Repositories
             return createdBook;
         }
 
-        public Task<bool> DeleteAsync(Guid id)
+        public async Task<bool> DeleteAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var bookToDelete = await _libraryContext.Books.FindAsync(id);
+
+            if (bookToDelete == null)
+                throw new Exception();
+
+            bookToDelete.IsDeleted = true;
+            var deletedBook = _libraryContext.Books.Update(bookToDelete).Entity;
+
+            if (deletedBook == null) throw new Exception();
+
+            await _libraryContext.SaveChangesAsync();
+
+            return true;
         }
 
-        public Task<IEnumerable<Book>> GetAllAsync()
+        public async Task<IEnumerable<Book>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            _libraryContext.Books.AsNoTracking();
+
+            return await _libraryContext.Books.Where(b => b.IsDeleted == false).ToListAsync();
         }
 
-        public Task<IEnumerable<Book>> GetAllByAuthorAsync(Author author)
+        public async Task<IEnumerable<Book>> GetAllByAuthorAsync(Author author)
         {
-            throw new NotImplementedException();
+            _libraryContext.Books.AsNoTracking();
+
+            return await _libraryContext.Books.Where(b => b.AuthorId == author.Id && b.IsDeleted == false).ToListAsync();
         }
 
-        public Task<IEnumerable<Book>> GetAllByGenresAsync(IEnumerable<Genre> genres)
+        public async Task<IEnumerable<Book>> GetAllByGenresAsync(IEnumerable<Genre> genres)
         {
-            throw new NotImplementedException();
+            _libraryContext.Books.AsNoTracking();
+
+            return await _libraryContext.Books.Where(b => genres.Contains(b.Genre) && b.IsDeleted == false).ToListAsync();
         }
 
-        public Task<IEnumerable<Book>> GetAllByPublisherAsync(IEnumerable<string> publishers)
+        public async Task<IEnumerable<Book>> GetAllByPublisherAsync(IEnumerable<string> publishers)
         {
-            throw new NotImplementedException();
+            _libraryContext.Books.AsNoTracking();
+
+            return await _libraryContext.Books.Where(b => publishers.Contains(b.Publisher) && b.IsDeleted == false).ToListAsync();
         }
 
-        public Task<Book> GetByIdAsync(Guid id)
+        public async Task<Book> GetByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var book = await _libraryContext.Books.FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted == false);
+
+            return book;
         }
 
-        public Task<Book> GetByTitleAsync(string title)
+        public async Task<Book> GetByTitleAsync(string title)
         {
-            throw new NotImplementedException();
+            _libraryContext.Books.AsNoTracking();
+
+            var book = await _libraryContext.Books.FirstOrDefaultAsync(b => b.Title.Equals(title, StringComparison.OrdinalIgnoreCase) && b.IsDeleted == false);
+
+            return book;
         }
 
-        public Task<Book> UpdateAsync(Book book)
+        public async Task<Book> UpdateAsync(Book book)
         {
-            throw new NotImplementedException();
+            var bookToUpdate = await _libraryContext.Books.FindAsync(book.Id);
+
+            bookToUpdate.Id = book.Id;
+            bookToUpdate.Title = book.Title;
+            bookToUpdate.AuthorId = book.AuthorId;
+            bookToUpdate.Genre = book.Genre;
+            bookToUpdate.Publisher = book.Publisher;
+            bookToUpdate.PublishingYear = book.PublishingYear;
+            bookToUpdate.IsAvailable = book.IsAvailable;
+            bookToUpdate.Rating = book.Rating;
+            bookToUpdate.IsDeleted = book.IsDeleted;
+            bookToUpdate.CreatedAt = book.CreatedAt;
+            bookToUpdate.LastUpdatedAt = DateTime.UtcNow;
+
+            await _libraryContext.SaveChangesAsync();
+
+            return bookToUpdate;
         }
 
-        public Task<bool> UpdateAvailabilityAsync(Book book)
+        public async Task<bool> UpdateAvailabilityAsync(Book book)
         {
-            throw new NotImplementedException();
+            var bookToUpdate = await _libraryContext.Books.FindAsync(book.Id);
+
+            bookToUpdate.IsAvailable = book.IsAvailable;
+
+            await _libraryContext.SaveChangesAsync();
+
+            return true;
         }
 
-        public Task<bool> UpdateRatingAsync(Book book)
+        public async Task<bool> UpdateRatingAsync(Book book)
         {
-            throw new NotImplementedException();
+            var bookToUpdate = await _libraryContext.Books.FindAsync(book.Id);
+
+            bookToUpdate.Rating = book.Rating;
+
+            await _libraryContext.SaveChangesAsync();
+
+            return true;
         }
     }
 }

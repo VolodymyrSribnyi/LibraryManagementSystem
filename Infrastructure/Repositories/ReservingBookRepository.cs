@@ -1,5 +1,6 @@
-﻿using Domain.Entities;
-using Domain.Interfaces;
+﻿using Abstractions.Repositories;
+using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,39 +11,72 @@ namespace Infrastructure.Repositories
 {
     public class ReservingBookRepository : IReservingBookRepository
     {
-        public Task<bool> CancelReservationAsync(Guid id)
+        private readonly LibraryContext _libraryContext;
+        public ReservingBookRepository(LibraryContext libraryContext)
         {
-            throw new NotImplementedException();
+            _libraryContext = libraryContext;
+        }
+        public async Task<bool> CancelReservationAsync(Guid id)
+        {
+            var reservationToCancel = await _libraryContext.Reservations.FindAsync(id);
+
+            reservationToCancel.IsReturned = true;
+
+            await _libraryContext.SaveChangesAsync();
+
+            return true;
         }
 
-        public Task<IEnumerable<Reservation>> GetActiveReservationsAsync()
+        public async Task<IEnumerable<Reservation>> GetActiveReservationsAsync()
         {
-            throw new NotImplementedException();
+            _libraryContext.Reservations.AsNoTracking();
+
+            var activeReservations = await _libraryContext.Reservations.Where(r => r.IsReturned == false).ToListAsync();
+
+            return activeReservations;
         }
 
-        public Task<IEnumerable<Reservation>> GetAllAsync()
+        public async Task<IEnumerable<Reservation>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            _libraryContext.Reservations.AsNoTracking();
+
+            var reservations = await _libraryContext.Reservations.ToListAsync();
+
+            return reservations;
         }
 
-        public Task<Reservation> GetByIdAsync(Guid id)
+        public async Task<Reservation> GetByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var reservation = await _libraryContext.Reservations.FirstOrDefaultAsync(r => r.Id == id);
+
+            return reservation;
         }
 
-        public Task<IEnumerable<Reservation>> GetByUserIdAsync(Guid userId)
+        public async Task<IEnumerable<Reservation>> GetByUserIdAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            var reservations = await _libraryContext.Reservations.Where(r => r.UserId == userId).ToListAsync();
+
+            return reservations;
         }
 
-        public Task<Reservation> ReserveBookAsync(Reservation reservation)
+        public async Task<Reservation> ReserveBookAsync(Reservation reservation)
         {
-            throw new NotImplementedException();
+            var createdReservation = _libraryContext.Reservations.Add(reservation).Entity;
+
+            await _libraryContext.SaveChangesAsync();
+
+            return createdReservation;
         }
 
-        public Task<Reservation> UpdateStatusAsync(Reservation reservation)
+        public async Task<Reservation> UpdateStatusAsync(Reservation reservation)
         {
-            throw new NotImplementedException();
+            var updatedReservation = await _libraryContext.Reservations.FindAsync(reservation.Id);
+
+            updatedReservation.IsReturned = reservation.IsReturned;
+
+            await _libraryContext.SaveChangesAsync();
+
+            return updatedReservation;
         }
     }
 }

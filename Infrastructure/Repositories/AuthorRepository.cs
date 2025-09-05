@@ -1,5 +1,5 @@
-﻿using Domain.Entities;
-using Domain.Interfaces;
+﻿using Abstractions.Repositories;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
@@ -22,15 +22,10 @@ namespace Infrastructure.Repositories
 
         public async Task<bool> DeleteAsync(Guid id)
         {
-            var authorToDelete = await _libraryContext.Authors.FindAsync(id);
-
-            if (authorToDelete == null)
-                throw new Exception();
+            var authorToDelete = await _libraryContext.Authors.FirstOrDefaultAsync(a => a.Id == id);
 
             authorToDelete.IsDeleted = true;
-            var deletedAuthor = _libraryContext.Authors.Update(authorToDelete).Entity;
-
-            if (deletedAuthor == null) throw new Exception();
+            var deletedAuthor = _libraryContext.Authors.Update(authorToDelete).Entity;  
 
             await _libraryContext.SaveChangesAsync();
 
@@ -59,7 +54,6 @@ namespace Infrastructure.Repositories
         public async Task<Author> GetByIdAsync(Guid id)
         {
             var author = await _libraryContext.Authors.FindAsync(id);
-            if (author == null) throw new Exception();
 
             return author;
         }
@@ -67,9 +61,6 @@ namespace Infrastructure.Repositories
         public async Task<Author> UpdateAsync(Author author)
         {
             var authorToUpdate = await _libraryContext.Authors.FindAsync(author.Id);
-
-            if (authorToUpdate == null)
-                throw new Exception();
 
             authorToUpdate.Id = author.Id;
             authorToUpdate.FirstName = author.FirstName;

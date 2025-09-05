@@ -1,5 +1,6 @@
-﻿using Domain.Entities;
-using Domain.Interfaces;
+﻿using Abstractions.Repositories;
+using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,24 +11,44 @@ namespace Infrastructure.Repositories
 {
     public class NotificationRepository : INotificationRepository
     {
-        public Task<Notification> CreateAsync(Notification notification)
+        private readonly LibraryContext _libraryContext;
+
+        public NotificationRepository(LibraryContext libraryContext)
         {
-            throw new NotImplementedException();
+            _libraryContext = libraryContext;
+        }
+        public async Task<Notification> CreateAsync(Notification notification)
+        {
+            var createdNotification = _libraryContext.Notifications.Add(notification).Entity;
+
+            await _libraryContext.SaveChangesAsync();
+
+            return createdNotification;
         }
 
-        public Task<Notification> GetByIdAsync(Guid notificationId)
+        public async Task<Notification> GetByIdAsync(Guid notificationId)
         {
-            throw new NotImplementedException();
+            var notification = await _libraryContext.Notifications.FirstOrDefaultAsync(n => n.Id == notificationId);
+
+            return notification;
         }
 
         public Task<IEnumerable<Notification>> GetUserNotificationsAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            var notifications = _libraryContext.Notifications.Where(n => n.UserId == userId).AsEnumerable();
+
+            return Task.FromResult(notifications);
         }
 
-        public Task<bool> MarkNotificationAsReadAsync(Guid notificationId)
+        public async Task<bool> MarkNotificationAsReadAsync(Guid notificationId)
         {
-            throw new NotImplementedException();
+            var notification = _libraryContext.Notifications.FirstOrDefault(n => n.Id == notificationId);
+
+            notification.IsRead = true;
+
+            await _libraryContext.SaveChangesAsync();
+
+            return true;
         }
     }
 }
