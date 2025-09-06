@@ -23,6 +23,9 @@ namespace Infrastructure.Services
         }
         public async Task<GetAuthorDTO> AddAsync(CreateAuthorDTO createAuthorDTO)
         {
+            if (createAuthorDTO == null)
+                throw new ArgumentNullException(nameof(createAuthorDTO));
+
             var authorToCreate = _mapper.Map<Author>(createAuthorDTO);
 
             var author = await _authorRepository.AddAsync(authorToCreate);
@@ -75,6 +78,9 @@ namespace Infrastructure.Services
 
         public async Task<GetAuthorDTO> GetByFullNameAsync(string surname)
         {
+            if (string.IsNullOrWhiteSpace(surname))
+                throw new ArgumentNullException(nameof(surname));
+
             var author = await _authorRepository.GetByFullNameAsync(surname);
 
             if (author == null)

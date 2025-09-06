@@ -24,6 +24,7 @@ namespace Infrastructure.Configurations
             builder.Property(a => a.Surname)
                 .HasMaxLength(50)
                 .IsRequired();
+
             builder.Property(a => a.CreatedAt)
                 .ValueGeneratedOnAdd();
 

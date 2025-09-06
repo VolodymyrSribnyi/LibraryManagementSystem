@@ -29,11 +29,11 @@ namespace Infrastructure.Configurations
 
             builder.Property(r => r.ReservedAt)
                 .IsRequired()
-                .HasDefaultValue(DateTime.UtcNow);
+                .ValueGeneratedOnAdd();
 
             builder.Property(r => r.EndsAt)
                 .IsRequired()
-                .HasDefaultValue(DateTime.UtcNow.AddDays(14)); 
+                .HasDefaultValueSql("DATEADD(DAY, 14, GETUTCDATE())");
 
             builder.Property(r => r.IsReturned)
                 .HasDefaultValue(false)

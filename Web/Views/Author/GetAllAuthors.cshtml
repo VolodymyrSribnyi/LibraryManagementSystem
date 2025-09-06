@@ -1,0 +1,43 @@
+﻿@model IEnumerable<Application.DTOs.Authors.GetAuthorDTO>;
+
+<h1>Authors</h1>
+
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>ID</th>
+			<th>FirstName</th>
+			<th>Surname</th>
+			<th>MiddleName</th>
+			<th>Age</th>
+			<th>Books</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var author in Model)
+		{
+			<tr>
+				<td>@author.Id</td>
+				<td>@author.FirstName</td>
+				<td>@author.Surname</td>
+				<td>@author.MiddleName</td>
+				<td>@author.Age</td>
+				<td>
+					@if (author.Books != null && author.Books.Any())
+					{
+						<ul>
+							@foreach (var book in author.Books)
+							{
+								<li>@book.Title</li>
+							}
+						</ul>
+					}
+					else
+					{
+						<span>No books available</span>
+					}
+			</tr>
+		}
+	</tbody>
+	</table>

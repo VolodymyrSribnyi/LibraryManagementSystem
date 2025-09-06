@@ -21,7 +21,7 @@ namespace Domain.Entities
         public Guid Id { get; set; }
         public string Title { get; set; }
         public Guid AuthorId { get; set; }
-        public Author Author { get; set; }
+        public virtual Author Author { get; set; }
         public Genre Genre { get; set; }
         public string Publisher { get; set; }
         public int PublishingYear { get; set; }
@@ -30,6 +30,5 @@ namespace Domain.Entities
         public Rating Rating { get; set; }
         public DateTime LastUpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
-
     }
 }

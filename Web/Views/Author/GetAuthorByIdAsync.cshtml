@@ -1,0 +1,23 @@
+﻿@model Application.DTOs.Authors.GetAuthorDTO
+@{
+	ViewData["Title"] = "Author Details";
+}
+<h1>Author Details</h1>
+<div>
+	<h2>@Model.FirstName @Model.MiddleName @Model.Surname</h2>
+	<p><strong>Age:</strong> @Model.Age</p>
+	<h3>Books:</h3>
+	@if (Model.Books != null && Model.Books.Any())
+	{
+		<ul>
+			@foreach (var book in Model.Books)
+			{
+				<li>@book.Title</li>
+			}
+		</ul>
+	}
+	else
+	{
+		<p>No books available</p>
+	}
+</div>

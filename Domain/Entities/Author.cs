@@ -13,7 +13,7 @@
         public string? MiddleName { get; set; }
         public int Age { get; set; }
         public List<Book> Books { get; set; } 
-        public DateTime CreatedAt { get; set; } 
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public bool IsDeleted { get; set; }
     }
 }

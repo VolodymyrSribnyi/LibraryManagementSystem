@@ -30,7 +30,7 @@ namespace Infrastructure.Configurations
 
             builder.Property(lc => lc.ValidTo)
                 .IsRequired()
-                .HasDefaultValue(DateTime.UtcNow.AddYears(1)); 
+                .HasDefaultValueSql("DATEADD(YEAR, 1, GETUTCDATE())"); 
         }
     }
 }

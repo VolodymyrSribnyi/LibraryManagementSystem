@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -29,7 +30,7 @@ namespace Infrastructure.Configurations
                 .HasMaxLength(100)
                 .IsRequired();
 
-            builder.Property(b => b.Author)
+            builder.Property(b => b.AuthorId)
                 .IsRequired();
 
             builder.Property(b => b.Genre)
@@ -48,7 +49,7 @@ namespace Infrastructure.Configurations
                 .HasDefaultValue(true);
 
             builder.Property(b => b.Rating)
-                .HasDefaultValue(0.0)
+                .HasDefaultValue(Rating.NotRated)
                 .IsRequired();
 
             builder.Property(b => b.IsDeleted)

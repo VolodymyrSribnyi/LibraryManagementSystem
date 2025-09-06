@@ -31,13 +31,9 @@ namespace Infrastructure.Repositories
         {
             var bookToDelete = await _libraryContext.Books.FindAsync(id);
 
-            if (bookToDelete == null)
-                throw new Exception();
-
             bookToDelete.IsDeleted = true;
-            var deletedBook = _libraryContext.Books.Update(bookToDelete).Entity;
 
-            if (deletedBook == null) throw new Exception();
+            var deletedBook = _libraryContext.Books.Update(bookToDelete).Entity;
 
             await _libraryContext.SaveChangesAsync();
 

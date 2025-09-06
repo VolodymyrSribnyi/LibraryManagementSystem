@@ -12,7 +12,7 @@ namespace Infrastructure
 {
     public class LibraryContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
     {
-        public LibraryContext(DbContextOptions options) : base(options)
+        public LibraryContext(DbContextOptions<LibraryContext> options) : base(options)
         { }
         public DbSet<ApplicationUser> ApplicationUsers { get; set; }
         public DbSet<Author> Authors { get; set; }
@@ -20,7 +20,12 @@ namespace Infrastructure
         public DbSet<LibraryCard> LibraryCards { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
-        protected override void OnModelCreating(ModelBuilder modelBuilder) =>
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(LibraryContext).Assembly);
+        public DbSet<IdentityRole> IdentityRoles { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(LibraryContext).Assembly);
+
+        }
     }
 }
