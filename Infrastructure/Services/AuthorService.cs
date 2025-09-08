@@ -28,6 +28,14 @@ namespace Infrastructure.Services
 
             var authorToCreate = _mapper.Map<Author>(createAuthorDTO);
 
+            var existingAuthor = await _authorRepository.GetByIdAsync(authorToCreate.Id);
+
+            if (existingAuthor != null)
+            {
+
+                throw new AuthorExistsException(createAuthorDTO.FirstName, createAuthorDTO.Surname);
+            }
+
             var author = await _authorRepository.AddAsync(authorToCreate);
 
             if(author == null)

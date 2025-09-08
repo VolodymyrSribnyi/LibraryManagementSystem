@@ -44,9 +44,9 @@ namespace Infrastructure.Repositories
             var firstName = parts[0];
             var lastName = parts[1];
 
-            var author = await _libraryContext.Authors.FirstOrDefaultAsync(a => a.FirstName.Equals(firstName, StringComparison.OrdinalIgnoreCase) && a.Surname.Equals(lastName, StringComparison.OrdinalIgnoreCase));
-
-            if (author == null) throw new Exception();
+            var author = await _libraryContext.Authors.
+                FirstOrDefaultAsync(a => a.FirstName.Equals(firstName, StringComparison.OrdinalIgnoreCase) 
+                && a.Surname.Equals(lastName, StringComparison.OrdinalIgnoreCase));
 
             return author;
         }

@@ -21,9 +21,9 @@ namespace Infrastructure.Configurations
                 .ValueGeneratedOnAdd()
                 .IsRequired();
 
-            builder.Property(u => u.FirstName).HasMaxLength(50).IsRequired();
+            builder.Property(u => u.FirstName).HasMaxLength(50).IsRequired(false);
 
-            builder.Property(u => u.Surname).HasMaxLength(50).IsRequired();
+            builder.Property(u => u.Surname).HasMaxLength(50).IsRequired(false);
 
             builder.Property(u => u.CreatedAt)
                .ValueGeneratedOnAdd();

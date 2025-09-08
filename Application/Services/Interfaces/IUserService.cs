@@ -12,6 +12,7 @@ namespace Application.Services.Interfaces
     {
         Task<GetUserDTO> CreateUserAsync(CreateUserDTO createUserDTO);
         Task<GetUserDTO> UpdateUserAsync(UpdateUserDTO updateUserDTO);
+        Task<bool> Logout();
         Task<bool> DeleteUserAsync(Guid id);
         Task<GetUserDTO> GetUserByIdAsync(Guid id);
         Task<GetUserDTO> GetUserByEmailAsync(string email);

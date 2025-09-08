@@ -1,0 +1,16 @@
+﻿@model Application.DTOs.Users.GetUserDTO
+
+<h1>User's Dashboard</h1>
+@if(User.Identity.IsAuthenticated)
+{
+	<p>@User.Identity.Name</p>
+
+	<form method="post" asp-controller="User" asp-action="Logout">
+		<input type="submit" value="Logout" />
+	</form>
+}
+else
+{
+	<a asp-controller="User" asp-action="Login">Login</a>
+	<a asp-controller="User" asp-action="Register">Register</a>
+}

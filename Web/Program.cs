@@ -1,5 +1,8 @@
 
+using Infrastructure;
 using Infrastructure.Configurations;
+using Microsoft.AspNetCore.Identity;
+using Web.Middleware;
 
 namespace Web
 {
@@ -22,12 +25,14 @@ namespace Web
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-
+            app.UseDeveloperExceptionPage();
+            app.UseMiddleware<ErrorHandlerMiddleware>();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllerRoute(

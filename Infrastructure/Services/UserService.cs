@@ -2,6 +2,7 @@
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -144,7 +145,7 @@ namespace Infrastructure.Services
         public async Task<GetUserDTO> AuthenticateAsync(LoginUserDTO loginUserDTO)
         {
             var user = await _signInManager.PasswordSignInAsync(
-                loginUserDTO.Email,
+                loginUserDTO.UserName,
                 loginUserDTO.Password,
                 isPersistent: false,
                 lockoutOnFailure: false
@@ -155,7 +156,7 @@ namespace Infrastructure.Services
                 throw new InvalidOperationException("Invalid login attempt.");
             }
 
-            var applicationUser = await _userManager.FindByEmailAsync(loginUserDTO.Email);
+            var applicationUser = await _userManager.FindByNameAsync(loginUserDTO.UserName);
 
             if (applicationUser == null)
             {
@@ -164,8 +165,15 @@ namespace Infrastructure.Services
 
             return _mapper.Map<GetUserDTO>(applicationUser);
         }
+        public async Task<bool> Logout()
+        {
+            await _signInManager.SignOutAsync();
+
+            return true;
+        }
         public async Task<GetUserDTO> ChangePasswordAsync(ChangePasswordDTO changePasswordDTO)
         {
+            
             var user = await _userManager.FindByIdAsync(changePasswordDTO.UserId.ToString());
 
             if (user == null)

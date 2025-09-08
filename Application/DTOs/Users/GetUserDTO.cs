@@ -9,6 +9,7 @@ namespace Application.DTOs.Users
     public class GetUserDTO
     {
         public Guid Id { get; set; }
+        public string UserName { get; set; }
         public string FirstName { get; set; }
         public string Surname { get; set; }
         public string? MiddleName { get; set; }
