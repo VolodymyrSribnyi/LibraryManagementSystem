@@ -15,7 +15,7 @@ namespace Infrastructure.Services
         private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<BookService> _logger;
-        public BookService(IBookRepository bookRepository,IMapper mapper,ILogger<BookService> logger)
+        public BookService(IBookRepository bookRepository, IMapper mapper, ILogger<BookService> logger)
         {
             _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(_mapper));
@@ -23,10 +23,17 @@ namespace Infrastructure.Services
         }
         public async Task<GetBookDTO> AddAsync(CreateBookDTO createBookDTO)
         {
-            if(createBookDTO == null)
+            if (createBookDTO == null)
                 throw new ArgumentNullException(nameof(createBookDTO));
 
-            var bookToCreate = _mapper.Map<Book>(createBookDTO); 
+            var bookToCreate = _mapper.Map<Book>(createBookDTO);
+            var existingBook = await _bookRepository.GetByIdAsync(bookToCreate.Id);
+            if (existingBook != null)
+            {
+                _logger.LogWarning($"Book with title {bookToCreate.Title} exists");
+                throw new BookExistsException(bookToCreate.Title);
+            }
+
             var book = await _bookRepository.AddAsync(bookToCreate);
 
             if (book == null)
@@ -41,7 +48,7 @@ namespace Infrastructure.Services
 
         public async Task<bool> DeleteAsync(Guid id)
         {
-            if(id == Guid.Empty)
+            if (id == Guid.Empty)
                 throw new ArgumentNullException(nameof(id));
 
             var bookToDelete = await _bookRepository.GetByIdAsync(id);
@@ -103,7 +110,7 @@ namespace Infrastructure.Services
             if (books == null || !books.Any())
             {
                 _logger.LogInformation("No books found for the specified genres");
-                throw new Exception("No books found for the specified genres");
+                throw new BookNotFoundException(genres);
             }
 
             return _mapper.Map<IEnumerable<GetBookDTO>>(books);
@@ -118,7 +125,7 @@ namespace Infrastructure.Services
             if (books == null || !books.Any())
             {
                 _logger.LogInformation("No books found for the specified publishers");
-                throw new Exception("No books found for the specified publishers");
+                throw new BookNotFoundException("No books found for the specified publishers");
             }
 
             return _mapper.Map<IEnumerable<GetBookDTO>>(books);
@@ -126,13 +133,14 @@ namespace Infrastructure.Services
 
         public async Task<GetBookDTO> GetByIdAsync(Guid id)
         {
-            if(id == Guid.Empty)
+            if (id == Guid.Empty)
                 throw new ArgumentNullException("id");
 
             var book = await _bookRepository.GetByIdAsync(id);
 
             if (book == null)
             {
+                _logger.LogInformation($"No book with id {id} found in repository");
                 throw new BookNotFoundException(id);
             }
 
@@ -141,14 +149,15 @@ namespace Infrastructure.Services
 
         public async Task<GetBookDTO> GetByTitleAsync(string title)
         {
-            if(string.IsNullOrWhiteSpace(title))
+            if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentNullException("title");
 
             var book = await _bookRepository.GetByTitleAsync(title);
 
             if (book == null)
             {
-                throw new BookNotFoundException(title);
+                _logger.LogInformation($"Book with title {title} not found");
+                throw new BookNotFoundException($"Book with title {title} not found");
             }
 
             return _mapper.Map<GetBookDTO>(book);
@@ -156,15 +165,18 @@ namespace Infrastructure.Services
 
         public async Task<GetBookDTO> UpdateAsync(UpdateBookDTO updateBookDTO)
         {
-            if(updateBookDTO == null)
+            if (updateBookDTO == null)
                 throw new ArgumentNullException(nameof(updateBookDTO));
 
             var bookExists = await _bookRepository.GetByIdAsync(updateBookDTO.Id);
 
             if (bookExists == null)
+            {
+                _logger.LogInformation($"Book with title {updateBookDTO.Title} not found");
                 throw new BookNotFoundException(updateBookDTO.Id);
+            }
 
-            _mapper.Map(updateBookDTO,bookExists);
+            _mapper.Map(updateBookDTO, bookExists);
 
             var updatedBook = await _bookRepository.UpdateAsync(bookExists);
 
@@ -179,13 +191,16 @@ namespace Infrastructure.Services
 
         public async Task<bool> UpdateAvailabilityAsync(UpdateBookStatusDTO updateBookStatusDTO)
         {
-            if(updateBookStatusDTO == null)
-                throw new ArgumentNullException(nameof (updateBookStatusDTO));
+            if (updateBookStatusDTO == null)
+                throw new ArgumentNullException(nameof(updateBookStatusDTO));
 
             var existingBook = await _bookRepository.GetByIdAsync(updateBookStatusDTO.BookId);
 
             if (existingBook == null)
+            {
+                _logger.LogInformation($"Book with id {updateBookStatusDTO.BookId} not found");
                 throw new BookNotFoundException(updateBookStatusDTO.BookId);
+            }
 
             var bookToUpdate = new Book
             {
@@ -207,13 +222,17 @@ namespace Infrastructure.Services
 
         public async Task<bool> UpdateRatingAsync(UpdateBookRatingDTO updateBookRatingDTO)
         {
-            if(updateBookRatingDTO == null)
-                throw new ArgumentNullException (nameof (updateBookRatingDTO));
+            if (updateBookRatingDTO == null)
+                throw new ArgumentNullException(nameof(updateBookRatingDTO));
 
             var existingBook = await _bookRepository.GetByIdAsync(updateBookRatingDTO.BookId);
 
             if (existingBook == null)
+            {
+                _logger.LogInformation($"Book with id {updateBookRatingDTO.BookId} not found");
                 throw new BookNotFoundException(updateBookRatingDTO.BookId);
+
+            }
 
             var bookToUpdate = new Book
             {

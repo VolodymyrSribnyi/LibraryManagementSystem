@@ -2,6 +2,7 @@
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
+using Domain.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,7 @@ namespace Infrastructure.Services
 
             if (existingUser != null)
             {
-                throw new InvalidOperationException($"User with email {createUserDTO.Email} already exists.");
+                throw new UserExistsException($"User with email {createUserDTO.Email} already exists.");
             }
 
             var user = _mapper.Map<ApplicationUser>(createUserDTO);
@@ -54,7 +55,7 @@ namespace Infrastructure.Services
 
             if (user == null)
             {
-                throw new InvalidOperationException($"User with ID {updateUserDTO.Id} not found.");
+                throw new UserNotFoundException($"User with ID {updateUserDTO.Id} not found.");
             }
 
             _mapper.Map(updateUserDTO, user);
