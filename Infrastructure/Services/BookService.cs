@@ -70,7 +70,21 @@ namespace Infrastructure.Services
             _logger.LogInformation("Successfully deleted book with ID: {BookId}", id);
             return true;
         }
+        public async Task<GetBookDTO> GetByIdAsync(Guid id)
+        {
+            if (id == Guid.Empty)
+                throw new ArgumentNullException("id");
 
+            var book = await _bookRepository.GetByIdAsync(id);
+
+            if (book == null)
+            {
+                _logger.LogInformation($"No book with id {id} found in repository");
+                throw new BookNotFoundException(id);
+            }
+
+            return _mapper.Map<GetBookDTO>(book);
+        }
         public async Task<IEnumerable<GetBookDTO>> GetAllAsync()
         {
             var books = await _bookRepository.GetAllAsync();
@@ -131,21 +145,7 @@ namespace Infrastructure.Services
             return _mapper.Map<IEnumerable<GetBookDTO>>(books);
         }
 
-        public async Task<GetBookDTO> GetByIdAsync(Guid id)
-        {
-            if (id == Guid.Empty)
-                throw new ArgumentNullException("id");
 
-            var book = await _bookRepository.GetByIdAsync(id);
-
-            if (book == null)
-            {
-                _logger.LogInformation($"No book with id {id} found in repository");
-                throw new BookNotFoundException(id);
-            }
-
-            return _mapper.Map<GetBookDTO>(book);
-        }
 
         public async Task<GetBookDTO> GetByTitleAsync(string title)
         {
