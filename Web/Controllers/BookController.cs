@@ -1,7 +1,10 @@
 ﻿using Application.DTOs.Authors;
 using Application.DTOs.Books;
 using Application.Services.Interfaces;
+using Domain.Entities;
 using Domain.Enums;
+using Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Web.Controllers
@@ -9,22 +12,24 @@ namespace Web.Controllers
     public class BookController : Controller
     {
         private readonly IBookService _bookService;
+        private readonly LibraryContext _context;
 
-        public BookController(IBookService bookService)
+        public BookController(IBookService bookService,LibraryContext context)
         {
             _bookService = bookService;
+            _context = context;
         }
         [HttpGet]
         public IActionResult AddBook()
         {
-            return View();
+            return View(new CreateBookDTO { Authors = _context.Authors.ToList()});
         }
         [HttpPost]
-        public async Task<GetBookDTO> AddBook(CreateBookDTO bookDTO)
+        public async Task<IActionResult> AddBook(CreateBookDTO bookDTO)
         {
             var book = await _bookService.AddAsync(bookDTO);
 
-            return book;
+            return RedirectToAction("GetAllBooks");
         }
         [HttpDelete]
         public async Task<IActionResult> DeleteBook(Guid id)
@@ -35,7 +40,7 @@ namespace Web.Controllers
         [HttpGet]
         public IActionResult UpdateBook()
         {
-            return View();
+            return View(new UpdateBookDTO { Authors = _context.Authors.ToList() });
         }
         [HttpPost]
         public async Task<IActionResult> UpdateBook(UpdateBookDTO updateBookDTO)
@@ -71,6 +76,7 @@ namespace Web.Controllers
         public async Task<IActionResult> GetAllBooksByAuthor(GetAuthorDTO authorDTO)
         {
             var books = await _bookService.GetAllByAuthorAsync(authorDTO);
+            
             return View(books);
         }
         [HttpGet]

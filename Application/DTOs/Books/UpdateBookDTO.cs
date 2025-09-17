@@ -23,5 +23,6 @@ namespace Application.DTOs.Books
         public Genre Genre { get; set; }
         public string Publisher { get; set; }
         public int PublishingYear { get; set; }
+        public List<Author> Authors { get; set; } = [];
     }
 }

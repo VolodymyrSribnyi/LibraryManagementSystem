@@ -1,0 +1,73 @@
+﻿@model IEnumerable<Application.DTOs.Books.GetBookDTO>
+
+<h1>Books</h1>
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>
+				Id
+			</th>
+			<th>Title</th>
+
+			<th>
+				Author
+			</th>
+			<th>
+				Genre
+			</th>
+			<th>
+				Publisher
+			</th>
+			<th>PublishingYear</th>
+			<th>
+				CreatedAt
+			</th>
+			<th>
+				IsAvailable
+			</th>
+			<th>Rating</th>
+			<th>
+				LastUpdatedAt
+			</th>
+			<th>Reserve</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var book in Model)
+		{
+			<tr>
+				<th>
+					@book.Id
+				</th>
+				<th>@book.Title</th>
+
+				<th>
+					@book.Author.FullName
+				</th>
+				<th>
+					@book.Genre
+				</th>
+				<th>
+					@book.Publisher
+				</th>
+				<th>@book.PublishingYear</th>
+				<th>
+					@book.CreatedAt
+				</th>
+				<th>
+					@book.IsAvailable
+				</th>
+				<th>
+					@book.Rating
+				</th>
+				<th>
+					@book.LastUpdatedAt
+				</th>
+				<th>
+					<a class="nav-link text-dark" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@book.Id">Reserve</a>
+				</th>
+			</tr>
+		}
+	</tbody>
+</table>

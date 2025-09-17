@@ -3,6 +3,7 @@ using Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -24,6 +25,8 @@ namespace Abstractions.Repositories
         Task<bool> UpdateAvailabilityAsync(Book book);
         Task<bool> UpdateRatingAsync(Book book);
         Task<bool> DeleteAsync(Guid id);
+        Task<Book> Get(Expression<Func<Book, bool>> filter, string? includeProperties = null);
+        Task<IEnumerable<Book>> GetAll(Expression<Func<Book, bool>>? filter = null, string? includeProperties = null);
         Task<Book> GetByTitleAsync(string title);
         Task<Book> GetByIdAsync(Guid id);
         Task<IEnumerable<Book>> GetAllAsync();

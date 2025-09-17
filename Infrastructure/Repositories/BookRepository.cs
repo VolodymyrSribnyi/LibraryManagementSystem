@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -39,38 +40,81 @@ namespace Infrastructure.Repositories
 
             return true;
         }
+        public async Task<Book> Get(Expression<Func<Book, bool>> filter, string? includeProperties = null)
+        {
+            IQueryable<Book> query = _libraryContext.Set<Book>();
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var property in includeProperties
+                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(property);
+                }
+            }
+            return await query.FirstOrDefaultAsync();
+        }
+        public async Task<IEnumerable<Book>> GetAll(Expression<Func<Book, bool>>? filter = null, string? includeProperties = null)
+        {
+            IQueryable<Book> query = _libraryContext.Set<Book>();
+
+            if (filter!=null)
+            {
+                query = query.Where(filter);
+            }
+            if(!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach(var property in includeProperties
+                    .Split(new char[] {','},StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(property);
+                }
+            }
+            return await query.ToListAsync();
+        }
 
         public async Task<IEnumerable<Book>> GetAllAsync()
         {
             _libraryContext.Books.AsNoTracking();
 
-            return await _libraryContext.Books.Where(b => b.IsDeleted == false).ToListAsync();
+            var books = await GetAll(b => b.IsDeleted == false);
+
+            foreach (var book in books)
+            {
+                book.Author = await _libraryContext.Authors.FirstOrDefaultAsync(b => b.Id == book.AuthorId);
+            }
+
+            return books;
         }
 
         public async Task<IEnumerable<Book>> GetAllByAuthorAsync(Author author)
         {
             _libraryContext.Books.AsNoTracking();
 
-            return await _libraryContext.Books.Where(b => b.AuthorId == author.Id && b.IsDeleted == false).ToListAsync();
+            return await GetAll(b => b.AuthorId == author.Id && b.IsDeleted == false);
         }
 
         public async Task<IEnumerable<Book>> GetAllByGenresAsync(IEnumerable<Genre> genres)
         {
             _libraryContext.Books.AsNoTracking();
 
-            return await _libraryContext.Books.Where(b => genres.Contains(b.Genre) && b.IsDeleted == false).ToListAsync();
+            return await GetAll(b => genres.Contains(b.Genre) && b.IsDeleted == false);
         }
 
         public async Task<IEnumerable<Book>> GetAllByPublisherAsync(IEnumerable<string> publishers)
         {
             _libraryContext.Books.AsNoTracking();
 
-            return await _libraryContext.Books.Where(b => publishers.Contains(b.Publisher) && b.IsDeleted == false).ToListAsync();
+            return await GetAll(b => publishers.Contains(b.Publisher) && b.IsDeleted == false);
         }
 
         public async Task<Book> GetByIdAsync(Guid id)
         {
-            var book = await _libraryContext.Books.FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted == false);
+            var book = await Get(b => b.Id == id && b.IsDeleted == false);
 
             return book;
         }
@@ -79,7 +123,7 @@ namespace Infrastructure.Repositories
         {
             _libraryContext.Books.AsNoTracking();
 
-            var book = await _libraryContext.Books.FirstOrDefaultAsync(b => b.Title.Equals(title, StringComparison.OrdinalIgnoreCase) && b.IsDeleted == false);
+            var book = await Get(b => b.Title.Equals(title/*, StringComparison.OrdinalIgnoreCase*/) && b.IsDeleted == false);
 
             return book;
         }
@@ -88,6 +132,7 @@ namespace Infrastructure.Repositories
         {
             var bookToUpdate = await _libraryContext.Books.FindAsync(book.Id);
 
+            
             bookToUpdate.Id = book.Id;
             bookToUpdate.Title = book.Title;
             bookToUpdate.AuthorId = book.AuthorId;
@@ -98,7 +143,7 @@ namespace Infrastructure.Repositories
             bookToUpdate.Rating = book.Rating;
             bookToUpdate.IsDeleted = book.IsDeleted;
             bookToUpdate.CreatedAt = book.CreatedAt;
-            bookToUpdate.LastUpdatedAt = DateTime.UtcNow;
+            //bookToUpdate.LastUpdatedAt = DateTime.UtcNow;
 
             await _libraryContext.SaveChangesAsync();
 

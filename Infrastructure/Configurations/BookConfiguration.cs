@@ -42,8 +42,8 @@ namespace Infrastructure.Configurations
             builder.Property(b => b.CreatedAt)
                 .ValueGeneratedOnAdd();
 
-            builder.Property(b => b.LastUpdatedAt)
-                .ValueGeneratedOnAddOrUpdate();
+            //builder.Property(b => b.LastUpdatedAt)
+            //    .ValueGeneratedOnAddOrUpdate();
 
             builder.Property(b => b.IsAvailable)
                 .HasDefaultValue(true);

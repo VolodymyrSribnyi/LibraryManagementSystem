@@ -6,6 +6,7 @@ using AutoMapper;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
+using Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services
@@ -15,11 +16,14 @@ namespace Infrastructure.Services
         private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<BookService> _logger;
-        public BookService(IBookRepository bookRepository, IMapper mapper, ILogger<BookService> logger)
+        private readonly IAuthorRepository _authorRepository;
+
+        public BookService(IBookRepository bookRepository, IMapper mapper, ILogger<BookService> logger,IAuthorRepository authorRepository)
         {
             _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(_mapper));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _authorRepository = authorRepository ?? throw new ArgumentNullException(nameof(authorRepository));
         }
         public async Task<GetBookDTO> AddAsync(CreateBookDTO createBookDTO)
         {
@@ -28,18 +32,24 @@ namespace Infrastructure.Services
 
             var bookToCreate = _mapper.Map<Book>(createBookDTO);
             var existingBook = await _bookRepository.GetByIdAsync(bookToCreate.Id);
+
             if (existingBook != null)
             {
-                _logger.LogWarning($"Book with title {bookToCreate.Title} exists");
-                throw new BookExistsException(bookToCreate.Title);
+                throw new BookExistsException($"Book with title {bookToCreate.Title} exists");
+            }
+
+            var existingAuthor = await _authorRepository.GetByIdAsync(createBookDTO.AuthorId);
+
+            if (existingAuthor == null)
+            {
+                throw new AuthorNotFoundException($"Author with id {bookToCreate.AuthorId} not found");
             }
 
             var book = await _bookRepository.AddAsync(bookToCreate);
 
             if (book == null)
             {
-                _logger.LogWarning($"Failed to create book with title: {createBookDTO.Title}");
-                throw new InvalidOperationException("Failed to create book");
+                throw new InvalidOperationException($"Failed to create book with title: {createBookDTO.Title}");
             }
 
             _logger.LogInformation($"Successfully created book with ID: {book.Id}");
@@ -63,8 +73,7 @@ namespace Infrastructure.Services
 
             if (!result)
             {
-                _logger.LogWarning($"Failed to delete book with id {id}");
-                throw new InvalidOperationException("Failed to delete book");
+                throw new InvalidOperationException($"Failed to delete book with id {id}");
             }
 
             _logger.LogInformation("Successfully deleted book with ID: {BookId}", id);
@@ -79,8 +88,7 @@ namespace Infrastructure.Services
 
             if (book == null)
             {
-                _logger.LogInformation($"No book with id {id} found in repository");
-                throw new BookNotFoundException(id);
+                throw new BookNotFoundException($"No book with id {id} found in repository");
             }
 
             return _mapper.Map<GetBookDTO>(book);
@@ -138,7 +146,6 @@ namespace Infrastructure.Services
 
             if (books == null || !books.Any())
             {
-                _logger.LogInformation("No books found for the specified publishers");
                 throw new BookNotFoundException("No books found for the specified publishers");
             }
 
@@ -156,7 +163,6 @@ namespace Infrastructure.Services
 
             if (book == null)
             {
-                _logger.LogInformation($"Book with title {title} not found");
                 throw new BookNotFoundException($"Book with title {title} not found");
             }
 
@@ -168,23 +174,23 @@ namespace Infrastructure.Services
             if (updateBookDTO == null)
                 throw new ArgumentNullException(nameof(updateBookDTO));
 
-            var bookExists = await _bookRepository.GetByIdAsync(updateBookDTO.Id);
+            var bookExists = await _bookRepository.GetByTitleAsync(updateBookDTO.Title);
 
             if (bookExists == null)
             {
-                _logger.LogInformation($"Book with title {updateBookDTO.Title} not found");
-                throw new BookNotFoundException(updateBookDTO.Id);
+                throw new BookNotFoundException($"Book with title {updateBookDTO.Title} not found");
             }
 
+            updateBookDTO.Id = bookExists.Id;
             _mapper.Map(updateBookDTO, bookExists);
 
             var updatedBook = await _bookRepository.UpdateAsync(bookExists);
 
             if (updatedBook == null)
             {
-                _logger.LogWarning($"Failed to update book with id: {updateBookDTO.Id}");
-                throw new InvalidOperationException("Failed to update book");
+                throw new InvalidOperationException($"Failed to update book with id: {updateBookDTO.Id}");
             }
+
             _logger.LogInformation("Successfully updated book with ID: {BookId}", updateBookDTO.Id);
             return _mapper.Map<GetBookDTO>(bookExists);
         }
@@ -198,8 +204,7 @@ namespace Infrastructure.Services
 
             if (existingBook == null)
             {
-                _logger.LogInformation($"Book with id {updateBookStatusDTO.BookId} not found");
-                throw new BookNotFoundException(updateBookStatusDTO.BookId);
+                throw new BookNotFoundException($"Book with id {updateBookStatusDTO.BookId} not found");
             }
 
             var bookToUpdate = new Book
@@ -212,8 +217,7 @@ namespace Infrastructure.Services
 
             if (!result)
             {
-                _logger.LogWarning($"Failed to update book availability with id {updateBookStatusDTO.BookId}");
-                throw new InvalidOperationException("Failed to update book availability");
+                throw new InvalidOperationException($"Failed to update book availability with id {updateBookStatusDTO.BookId}");
             }
 
             _logger.LogInformation($"Successfully updated book availability for book with id{updateBookStatusDTO.BookId}");
@@ -229,8 +233,7 @@ namespace Infrastructure.Services
 
             if (existingBook == null)
             {
-                _logger.LogInformation($"Book with id {updateBookRatingDTO.BookId} not found");
-                throw new BookNotFoundException(updateBookRatingDTO.BookId);
+                throw new BookNotFoundException($"Book with id {updateBookRatingDTO.BookId} not found");
 
             }
 
@@ -244,8 +247,7 @@ namespace Infrastructure.Services
 
             if (!result)
             {
-                _logger.LogWarning($"Failed to update book rating for book with id {updateBookRatingDTO.BookId}");
-                throw new InvalidOperationException("Failed to update book rating");
+                throw new InvalidOperationException($"Failed to update book rating for book with id {updateBookRatingDTO.BookId}");
             }
 
             _logger.LogInformation("Successfully updated rating for book ID: {BookId}", updateBookRatingDTO.BookId);
