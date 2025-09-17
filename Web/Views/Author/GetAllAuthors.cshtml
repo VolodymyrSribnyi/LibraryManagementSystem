@@ -1,24 +1,24 @@
 ﻿@model IEnumerable<Application.DTOs.Authors.GetAuthorDTO>;
 
 <h1>Authors</h1>
-
+<h3><a asp-controller="Author" asp-action="AddAuthor">Add new Author</a></h3>
 
 <table class="table">
 	<thead>
 		<tr>
-			<th>ID</th>
 			<th>FirstName</th>
 			<th>Surname</th>
 			<th>MiddleName</th>
 			<th>Age</th>
-			<th>Books</th>
+			<th>Details</th>
+			<th>Update</th>
+			<th>Delete</th>
 		</tr>
 	</thead>
 	<tbody>
 		@foreach (var author in Model)
 		{
 			<tr>
-				<td>@author.Id</td>
 				<td>@author.FirstName</td>
 				<td>@author.Surname</td>
 				<td>@author.MiddleName</td>
@@ -37,7 +37,17 @@
 					{
 						<span>No books available</span>
 					}
+				<td>
+					<a class="nav-link text-dark" asp-controller="Author" asp-action="GetAuthorById" asp-route-id="@author.Id">Details</a>
+				</td>
+				<td>
+					<a class="nav-link text-dark" asp-controller="Author" asp-action="UpdateAuthor" asp-route-id="@author.Id">Update</a>
+				</td>
+				<td>
+					<a class="nav-link text-dark" asp-controller="Author" asp-action="DeleteAuthor" asp-route-id="@author.Id">Delete</a>
+				</td>
 			</tr>
+
 		}
 	</tbody>
-	</table>
+</table>
