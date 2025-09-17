@@ -11,13 +11,12 @@ namespace Application.Services.Interfaces
     public interface IReservingBookService
     {
         Task<GetReservationDTO> ReserveBookAsync(CreateReservationDTO createReservationDTO);
-        Task<GetReservationDTO> UpdateStatusAsync(UpdateReservationStatusDTO updateReservationStatusDTO);
         /// <summary>
         /// Cancels a reservation by its ID.
         /// </summary>
         /// <param name="id">The ID of the reservation to cancel.</param>
         /// <returns>True if the cancellation was successful, otherwise false.</returns>
-        Task<bool> CancelReservationAsync(Guid id);
+        Task<bool> ReturnBookAsync(Guid id);
         Task<GetReservationDTO> GetByIdAsync(Guid id);
         Task<IEnumerable<GetReservationDTO>> GetByUserIdAsync(Guid userId);
         /// <summary>

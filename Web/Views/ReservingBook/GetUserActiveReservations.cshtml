@@ -1,0 +1,53 @@
+﻿@model IEnumerable<Application.DTOs.Reservations.GetReservationDTO>
+
+<h1>Reservations</h1>
+@if(Model.Any())
+{
+	<table>
+		<thead>
+			<tr>
+				<th>
+					Id
+				</th>
+				<th>
+					BookId
+				</th>
+				<th>
+					ReservedAt
+				</th>
+				<th>
+					EndsAt
+				</th>
+				<th>
+					Return
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var reservation in Model)
+			{
+				<tr>
+					<td>
+						@reservation.Id
+					</td>
+					<td>
+						@reservation.BookId
+					</td>
+					<td>
+						@reservation.ReservedAt
+					</td>
+					<td>
+						@reservation.EndsAt
+					</td>
+					<td>
+						<a asp-controller="ReservingBook" asp-action="ReturnBook" asp-route-Id="@reservation.Id">Return</a>
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+else
+{
+	<h3>No reservations is found</h3>
+}

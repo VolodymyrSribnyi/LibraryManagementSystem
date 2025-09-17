@@ -25,10 +25,10 @@ namespace Domain.Entities
         public Genre Genre { get; set; }
         public string Publisher { get; set; }
         public int PublishingYear { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public bool IsAvailable { get; set; }
         public Rating Rating { get; set; }
-        public DateTime LastUpdatedAt { get; set; }
+        //public DateTime LastUpdatedAt { get; set; } = DateTime.Now;
         public bool IsDeleted { get; set; }
     }
 }

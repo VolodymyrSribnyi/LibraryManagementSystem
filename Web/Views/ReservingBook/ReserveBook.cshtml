@@ -1,0 +1,18 @@
+﻿@model Application.DTOs.Reservations.CreateReservationDTO
+
+<h1>Reserve book</h1>
+<form asp-action="ReserveBook" method="post">
+	<h3>Book Id @Model.BookId</h3>
+	<h3>User Id @Model.UserId</h3>
+	<div class="form-group">
+		<label asp-for="BookId"></label>
+		<input asp-for="BookId" class="form-control" />
+		<span asp-validation-for="BookId" class="text-danger"></span>
+	</div>
+	<div class="form-group">
+		<label asp-for="UserId"></label>
+		<input asp-for="UserId" class="form-control" />
+		<span asp-validation-for="UserId" class="text-danger"></span>
+	</div>
+<button asp-controller="ReservingBook" asp-action="ReserveBook" formmethod="post">Reserve</button>
+</form>

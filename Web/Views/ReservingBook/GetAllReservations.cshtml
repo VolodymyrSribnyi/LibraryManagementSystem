@@ -1,0 +1,53 @@
+﻿@model IEnumerable<Application.DTOs.Reservations.GetReservationDTO>
+
+<h1>Reservations</h1>
+
+<table>
+	<thead>
+		<tr>
+			<th>
+				Id
+			</th>
+			<th>
+				UserId
+			</th>
+			<th>
+				BookId
+			</th>
+			<th>
+				ReservedAt
+			</th>
+			<th>
+				EndsAt
+			</th>
+			<th>
+				Is Returned
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach(var reservation in Model)
+		{
+			<tr>
+				<th>
+					@reservation.Id
+				</th>
+				<th>
+					@reservation.UserId
+				</th>
+				<th>
+					@reservation.BookId
+				</th>
+				<th>
+					@reservation.ReservedAt
+				</th>
+				<th>
+					@reservation.EndsAt
+				</th>
+				<th>
+					@reservation.IsReturned
+				</th>
+			</tr>
+		}
+	</tbody>
+</table>

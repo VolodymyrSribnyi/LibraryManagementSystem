@@ -3,7 +3,7 @@ using Infrastructure;
 using Infrastructure.Configurations;
 using Microsoft.AspNetCore.Identity;
 using Web.Middleware;
-
+//-Project Infrastructure -StartupProject Web
 namespace Web
 {
     public class Program
@@ -19,13 +19,16 @@ namespace Web
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            if (!app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-            app.UseDeveloperExceptionPage();
+
             app.UseMiddleware<ErrorHandlerMiddleware>();
             app.UseHttpsRedirection();
             app.UseStaticFiles();

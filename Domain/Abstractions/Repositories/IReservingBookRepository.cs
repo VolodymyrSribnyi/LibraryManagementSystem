@@ -12,13 +12,12 @@ namespace Abstractions.Repositories
     public interface IReservingBookRepository
     {
         Task<Reservation> ReserveBookAsync(Reservation reservation);
-        Task<Reservation> UpdateStatusAsync(Reservation reservation);
         /// <summary>
         /// Cancels a reservation by its ID.
         /// </summary>
         /// <param name="id">The ID of the reservation to cancel.</param>
         /// <returns>True if the cancellation was successful, otherwise false.</returns>
-        Task<bool> CancelReservationAsync(Guid id);
+        Task<bool> ReturnBookAsync(Guid id);
         Task<Reservation> GetByIdAsync(Guid id);
         Task<IEnumerable<Reservation>> GetByUserIdAsync(Guid userId);
         /// <summary>
@@ -27,5 +26,6 @@ namespace Abstractions.Repositories
         /// <returns>A list of all reservations.</returns>
         Task<IEnumerable<Reservation>> GetAllAsync();
         Task<IEnumerable<Reservation>> GetActiveReservationsAsync();
+        Task<bool> IsReservationExists(Reservation reservation);
     }
 }

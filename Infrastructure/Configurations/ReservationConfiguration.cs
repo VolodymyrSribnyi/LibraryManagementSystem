@@ -28,7 +28,6 @@ namespace Infrastructure.Configurations
                 .IsRequired();
 
             builder.Property(r => r.ReservedAt)
-                .IsRequired()
                 .ValueGeneratedOnAdd();
 
             builder.Property(r => r.EndsAt)

@@ -16,11 +16,14 @@ namespace Infrastructure.Repositories
         {
             _libraryContext = libraryContext;
         }
-        public async Task<bool> CancelReservationAsync(Guid id)
+        public async Task<bool> ReturnBookAsync(Guid id)
         {
             var reservationToCancel = await _libraryContext.Reservations.FindAsync(id);
 
             reservationToCancel.IsReturned = true;
+            var user = await _libraryContext.Users.FindAsync(reservationToCancel.UserId);
+
+            user.ReservedBooks.Remove(reservationToCancel);
 
             await _libraryContext.SaveChangesAsync();
 
@@ -61,22 +64,21 @@ namespace Infrastructure.Repositories
 
         public async Task<Reservation> ReserveBookAsync(Reservation reservation)
         {
+            reservation.Book = await _libraryContext.Books.FirstOrDefaultAsync(b => b.Id == reservation.BookId);
+            reservation.User = await _libraryContext.ApplicationUsers.FirstOrDefaultAsync(u => u.Id == reservation.UserId);
+            reservation.Book.IsAvailable = false;
+            reservation.User.ReservedBooks.Add(reservation);
             var createdReservation = _libraryContext.Reservations.Add(reservation).Entity;
 
             await _libraryContext.SaveChangesAsync();
 
             return createdReservation;
         }
-
-        public async Task<Reservation> UpdateStatusAsync(Reservation reservation)
+        public async Task<bool> IsReservationExists(Reservation reservation)
         {
-            var updatedReservation = await _libraryContext.Reservations.FindAsync(reservation.Id);
-
-            updatedReservation.IsReturned = reservation.IsReturned;
-
-            await _libraryContext.SaveChangesAsync();
-
-            return updatedReservation;
+            return await _libraryContext.Reservations.AnyAsync(r => r.UserId == reservation.UserId && r.BookId == reservation.BookId);
         }
+
+        
     }
 }
