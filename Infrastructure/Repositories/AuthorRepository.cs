@@ -1,6 +1,7 @@
 ﻿using Abstractions.Repositories;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
 {
@@ -32,10 +33,48 @@ namespace Infrastructure.Repositories
             return true;
         }
 
+        public async Task<Author> Get(Expression<Func<Author, bool>> filter, string? includeProperties = null)
+        {
+            IQueryable<Author> query = _libraryContext.Set<Author>();
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var property in includeProperties
+                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(property);
+                }
+            }
+            return await query.FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<Author>> GetAll(Expression<Func<Author, bool>>? filter = null, string? includeProperties = null)
+        {
+            IQueryable<Author> query = _libraryContext.Set<Author>();
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var property in includeProperties
+                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(property);
+                }
+            }
+            return await query.ToListAsync();
+        }
+
         public async Task<IEnumerable<Author>> GetAllAsync()
         {
             _libraryContext.Authors.AsNoTracking();
-            return await _libraryContext.Authors.Where(a => a.IsDeleted == false).ToListAsync();
+            return await GetAll(a => a.IsDeleted == false,"Books");
         }
 
         public async Task<Author> GetByFullNameAsync(string fullName)
@@ -44,8 +83,7 @@ namespace Infrastructure.Repositories
             var firstName = parts[0];
             var lastName = parts[1];
 
-            var author = await _libraryContext.Authors.
-                FirstOrDefaultAsync(a => a.FirstName.Equals(firstName, StringComparison.OrdinalIgnoreCase) 
+            var author = await Get(a => a.FirstName.Equals(firstName, StringComparison.OrdinalIgnoreCase) 
                 && a.Surname.Equals(lastName, StringComparison.OrdinalIgnoreCase));
 
             return author;
@@ -53,7 +91,7 @@ namespace Infrastructure.Repositories
 
         public async Task<Author> GetByIdAsync(Guid id)
         {
-            var author = await _libraryContext.Authors.FindAsync(id);
+            var author = await Get(a => a.Id == id,"Books");
 
             return author;
         }

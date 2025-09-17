@@ -19,7 +19,7 @@ namespace Infrastructure.Services
         private readonly IAuthorRepository _authorRepository;
         private readonly ILogger<AuthorService> _logger;
         private readonly IMapper _mapper;
-        public AuthorService(IAuthorRepository authorRepository, IMapper mapper, ILogger<AuthorService> logger)
+        public AuthorService(IAuthorRepository authorRepository, IMapper mapper,ILogger<AuthorService> logger)
         {
             _authorRepository = authorRepository;
             _mapper = mapper;
@@ -35,16 +35,14 @@ namespace Infrastructure.Services
 
             if (existingAuthor != null)
             {
-                _logger.LogWarning($"Author {createAuthorDTO.FirstName} {createAuthorDTO.Surname} already exists");
-                throw new AuthorExistsException(createAuthorDTO.FirstName, createAuthorDTO.Surname);
+                throw new AuthorExistsException($"Author {createAuthorDTO.FirstName} {createAuthorDTO.Surname} already exists");
             }
 
             var author = await _authorRepository.AddAsync(authorToCreate);
 
             if (author == null)
             {
-                _logger.LogWarning($"Failed to create author with name {createAuthorDTO.FirstName} {createAuthorDTO.Surname}");
-                throw new InvalidOperationException("Failed to create author");
+                throw new InvalidOperationException($"Failed to create author with name {createAuthorDTO.FirstName} {createAuthorDTO.Surname}");
             }
 
             _logger.LogInformation($"Successfully added author with id {author.Id}");
@@ -54,7 +52,7 @@ namespace Infrastructure.Services
         {
             var authors = await _authorRepository.GetAllAsync();
 
-            if (authors == null || authors.Any())
+            if (authors == null || authors.Any() == false)
             {
                 _logger.LogInformation("No authors found in repository");
                 return Enumerable.Empty<GetAuthorDTO>();
@@ -71,8 +69,7 @@ namespace Infrastructure.Services
 
             if (author == null)
             {
-                _logger.LogInformation($"Author with id {id} not found");
-                throw new AuthorNotFoundException(id);
+                throw new AuthorNotFoundException($"Author with id {id} not found");
             }
 
             return _mapper.Map<GetAuthorDTO>(author);
@@ -86,16 +83,14 @@ namespace Infrastructure.Services
 
             if (authorExists == null)
             {
-                _logger.LogInformation($"Author with id {updateAuthorDTO.Id} not found");
-                throw new AuthorNotFoundException(updateAuthorDTO.Id);
+                throw new AuthorNotFoundException($"Author with id {updateAuthorDTO.Id} not found");
             }
 
             _mapper.Map(updateAuthorDTO, authorExists);
-
             var author = await _authorRepository.UpdateAsync(authorExists);
+
             if (author == null)
             {
-                _logger.LogWarning($"Failed to update author with id {authorExists.Id}");
                 throw new InvalidOperationException($"Failed to update author with id {authorExists.Id}");
             }
 
@@ -110,16 +105,14 @@ namespace Infrastructure.Services
 
             if (author == null)
             {
-                _logger.LogInformation($"Author with id {id} not found");
-                throw new AuthorNotFoundException(id);
+                throw new AuthorNotFoundException($"Author with id {id} not found");
             }
 
             var result = await _authorRepository.DeleteAsync(author.Id);
 
             if (!result)
             {
-                _logger.LogWarning($"Failed to delete author with id {id}");
-                throw new InvalidOperationException("Failed to delete author");
+                throw new InvalidOperationException($"Failed to delete author with id {id}");
             }
 
             _logger.LogInformation("Successfully deleted author with ID: {authorId}", id);
@@ -135,12 +128,14 @@ namespace Infrastructure.Services
 
             if (author == null)
             {
-                _logger.LogInformation($"Author with surname {surname} not found");
-                throw new AuthorNotFoundException(surname);
-
+                throw new AuthorNotFoundException($"Author with surname {surname} not found");
             }
 
             return _mapper.Map<GetAuthorDTO>(author);
+        }
+        public UpdateAuthorDTO MapToUpdateAuthorDTO(GetAuthorDTO getAuthorDTO)
+        {
+            return _mapper.Map<UpdateAuthorDTO>(getAuthorDTO);
         }
     }
 }

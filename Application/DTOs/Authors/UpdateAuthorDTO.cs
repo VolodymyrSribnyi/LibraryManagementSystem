@@ -14,6 +14,5 @@ namespace Application.DTOs.Authors
         public string? Surname { get; set; }
         public string? MiddleName { get; set; }
         public int Age { get; set; }
-        public List<Book> Books { get; set; }
     }
 }

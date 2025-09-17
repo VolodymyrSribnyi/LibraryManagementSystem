@@ -2,6 +2,7 @@
 using Application.Services.Interfaces;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace Web.Controllers
 {
@@ -35,16 +36,21 @@ namespace Web.Controllers
             return View();
         }
         [HttpGet]
-        public async Task<IActionResult> GetAuthorByIdAsync(Guid id)
+        public async Task<IActionResult> GetAuthorById(Guid id)
         {
             var author = await _authorService.GetByIdAsync(id);
 
-            return View("GetAuthorByIdAsync", author);
+            return View("GetAuthorById", author);
         }
         [HttpGet]
-        public IActionResult UpdateAuthor()
+        public async Task<IActionResult> UpdateAuthor(Guid id)
         {
-            return View();
+            var author = await _authorService.GetByIdAsync(id);
+
+            if(author == null)
+                return NotFound();
+
+            return View(_authorService.MapToUpdateAuthorDTO(author));
         }
         [HttpPost]
         public async Task<IActionResult> UpdateAuthor(UpdateAuthorDTO updateAuthorDTO)
@@ -52,13 +58,13 @@ namespace Web.Controllers
             await _authorService.UpdateAsync(updateAuthorDTO);
             return RedirectToAction("GetAllAuthors");
         }
-        [HttpDelete]
+        
         public async Task<IActionResult> DeleteAuthor(Guid id)
         {
             await _authorService.DeleteAsync(id);
             return RedirectToAction("GetAllAuthors");
         }
-        public async Task<IActionResult> GetAuthorByFullNameAsync(string surname)
+        public async Task<IActionResult> GetAuthorByFullName(string surname)
         {
             var author = await _authorService.GetByFullNameAsync(surname);
             return View("GetAuthorById", author);

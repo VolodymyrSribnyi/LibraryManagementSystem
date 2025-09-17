@@ -8,8 +8,8 @@ namespace Domain.Exceptions
 {
     public class AuthorExistsException : BadRequestException
     {
-        public AuthorExistsException(string firstName,string surname)
-            : base($"An author with the name '{firstName}' and the surname '{surname}' already exists.")
+        public AuthorExistsException(string fullName)
+            : base($"An author with the name '{fullName}' already exists.")
         {
         }
     }

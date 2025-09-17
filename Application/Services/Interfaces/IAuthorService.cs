@@ -16,5 +16,6 @@ namespace Application.Services.Interfaces
         Task<GetAuthorDTO> GetByIdAsync(Guid id);
         Task<GetAuthorDTO> GetByFullNameAsync(string fullName);
         Task<IEnumerable<GetAuthorDTO>> GetAllAsync();
+        UpdateAuthorDTO MapToUpdateAuthorDTO(GetAuthorDTO getAuthorDTO);
     }
 }

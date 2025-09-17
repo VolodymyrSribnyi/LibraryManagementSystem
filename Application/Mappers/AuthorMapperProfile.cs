@@ -16,6 +16,7 @@ namespace Application.Mappers
             CreateMap<CreateAuthorDTO, Author>();
             CreateMap<Author,GetAuthorDTO>();
             CreateMap<UpdateAuthorDTO, Author>();
+            CreateMap<GetAuthorDTO, UpdateAuthorDTO>();
         }
     }
 }
