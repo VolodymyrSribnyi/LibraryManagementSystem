@@ -1,0 +1,47 @@
+﻿@model IEnumerable<Domain.Entities.BookNotificationRequest>
+<h1>My Subscriptions</h1>
+
+@if (Model.Any())
+{
+	<table>
+		<thead>
+			<tr>
+				<th>
+					Id
+				</th>
+				<th>
+					UserId
+				</th>
+				<th>
+					BookId
+				</th>
+				<th>
+					Unsubscribe
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var subscription in Model)
+			{
+				<tr>
+					<td>
+						@subscription.Id
+					</td>
+					<td>
+						@subscription.UserId
+					</td>
+					<td>
+						@subscription.BookId
+					</td>
+					<td>
+						<a asp-controller="Notification" asp-action="Unsubscribe" asp-route-id="@subscription.Id">Unsubscribe</a>
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+else
+{
+	<h3>No subscriptions is found</h3>
+}

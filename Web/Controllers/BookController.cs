@@ -1,4 +1,5 @@
-﻿using Application.DTOs.Authors;
+﻿using Abstractions.Repositories;
+using Application.DTOs.Authors;
 using Application.DTOs.Books;
 using Application.Services.Interfaces;
 using Domain.Entities;
@@ -12,12 +13,14 @@ namespace Web.Controllers
     public class BookController : Controller
     {
         private readonly IBookService _bookService;
+        private readonly IBookRepository _bookRepository;
         private readonly LibraryContext _context;
 
-        public BookController(IBookService bookService,LibraryContext context)
+        public BookController(IBookService bookService,LibraryContext context,IBookRepository bookRepository)
         {
             _bookService = bookService;
             _context = context;
+            _bookRepository = bookRepository;
         }
         [HttpGet]
         public IActionResult AddBook()
@@ -31,7 +34,7 @@ namespace Web.Controllers
 
             return RedirectToAction("GetAllBooks");
         }
-        [HttpDelete]
+        
         public async Task<IActionResult> DeleteBook(Guid id)
         {
             await _bookService.DeleteAsync(id);
@@ -52,7 +55,7 @@ namespace Web.Controllers
         public async Task<IActionResult> UpdateBookRating(UpdateBookRatingDTO updateBookDTO)
         {
             await _bookService.UpdateRatingAsync(updateBookDTO);
-            return Ok();
+            return RedirectToAction("GetAllBooks");
         }
         [HttpPost]
         public async Task<IActionResult> UpdateBookAvailability(UpdateBookStatusDTO updateBookStatusDTO)
@@ -64,7 +67,20 @@ namespace Web.Controllers
         public async Task<IActionResult> GetBookById(Guid id)
         {
             var book = await _bookService.GetByIdAsync(id);
-            return View(book);
+
+            return View("GetBookById", book);
+        }
+        /// <summary>
+        /// Викликається коли потрібно отримати зображення книги у вигляді файлу(браузер сам підвантажує ресурс)
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("books/{id}/picture")]
+        public async Task<IActionResult> GetPicture(Guid id)
+        {
+            var book = await _bookRepository.GetByIdAsync(id);
+
+            return File(book.PictureSource, "image/jpeg");
         }
         [HttpGet]
         public async Task<IActionResult> GetAllBooks()

@@ -28,6 +28,7 @@ namespace Domain.Entities
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public bool IsAvailable { get; set; }
         public Rating Rating { get; set; }
+        public byte[]? PictureSource { get; set; }
         //public DateTime LastUpdatedAt { get; set; } = DateTime.Now;
         public bool IsDeleted { get; set; }
     }

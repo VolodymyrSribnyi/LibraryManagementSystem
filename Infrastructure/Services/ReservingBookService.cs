@@ -3,14 +3,10 @@ using Application.DTOs.Reservations;
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
+using Domain.Events;
 using Domain.Exceptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.Services
 {
@@ -19,15 +15,17 @@ namespace Infrastructure.Services
         private readonly IReservingBookRepository _reservingBookRepository;
         private readonly IBookRepository _bookRepository;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IDomainEventPublisher _domainEventPublisher;
         private readonly IMapper _mapper;
         private readonly ILogger<ReservingBookService> _logger;
         public ReservingBookService(IReservingBookRepository reservingBookRepository,IMapper mapper, IBookRepository bookRepository,
-            UserManager<ApplicationUser> userManager,ILogger<ReservingBookService> logger)
+            UserManager<ApplicationUser> userManager,ILogger<ReservingBookService> logger,IDomainEventPublisher domainEventPublisher)
         {
             _reservingBookRepository = reservingBookRepository;
             _mapper = mapper;
             _bookRepository = bookRepository;
             _userManager = userManager;
+            _domainEventPublisher = domainEventPublisher;
             _logger = logger;
         }
         public async Task<GetReservationDTO> ReserveBookAsync(CreateReservationDTO createReservationDTO)
@@ -77,15 +75,20 @@ namespace Infrastructure.Services
 
             if (reservationToCancel == null)
             {
-                throw new Exception("Reservation not found.");
+                throw new ReservationNotFoundException($"Reservation with id {reservationToCancel.Id} not found");
             }
+
+            reservationToCancel.Book = await _bookRepository.GetByIdAsync(reservationToCancel.BookId);
+
 
             var result = await _reservingBookRepository.ReturnBookAsync(id);
 
             if (!result)
-            {
-                throw new ReservationNotFoundException($"Reservation with id {reservationToCancel.Id} not found");
-            }
+                throw new BookReservationException($"Reservation with id {reservationToCancel.Id} unable to return");
+
+            var domainEvent = new BookBecameAvailableEvent(reservationToCancel.BookId,reservationToCancel.Book.Title);
+
+            await _domainEventPublisher.PublishAsync(domainEvent);
 
             _logger.LogInformation("Reservation successfully canceled");
             return true;

@@ -1,5 +1,6 @@
 ﻿using Abstractions.Repositories;
 using Domain.Entities;
+using Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -19,11 +20,26 @@ namespace Infrastructure.Repositories
         }
         public async Task<Notification> CreateAsync(Notification notification)
         {
-            var createdNotification = _libraryContext.Notifications.Add(notification).Entity;
+            using var transaction = await _libraryContext.Database.BeginTransactionAsync();
+            try
+            {
+                var createdNotification = _libraryContext.Notifications.Add(notification).Entity;
 
-            await _libraryContext.SaveChangesAsync();
+                var user = await _libraryContext.ApplicationUsers.FirstOrDefaultAsync(u => u.Id == notification.UserId);
 
-            return createdNotification;
+                if (user == null)
+                    throw new UserNotFoundException($"User with id {notification.UserId} not found");
+
+                user.Notifications.Add(notification);
+                await _libraryContext.SaveChangesAsync();
+
+                return createdNotification;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return null;
+            }
         }
 
         public async Task<Notification> GetByIdAsync(Guid notificationId)

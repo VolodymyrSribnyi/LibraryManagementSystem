@@ -115,6 +115,7 @@ namespace Infrastructure.Repositories
         public async Task<Book> GetByIdAsync(Guid id)
         {
             var book = await Get(b => b.Id == id && b.IsDeleted == false);
+            book.Author = await _libraryContext.Authors.FirstOrDefaultAsync(b => b.Id == book.AuthorId);
 
             return book;
         }
@@ -165,7 +166,7 @@ namespace Infrastructure.Repositories
         {
             var bookToUpdate = await _libraryContext.Books.FindAsync(book.Id);
 
-            bookToUpdate.Rating = book.Rating;
+            bookToUpdate.Rating = (Rating)(((int)book.Rating) + ((int)bookToUpdate.Rating)/2);
 
             await _libraryContext.SaveChangesAsync();
 

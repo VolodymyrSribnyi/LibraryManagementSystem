@@ -19,6 +19,7 @@ namespace Infrastructure
         public DbSet<Book> Books { get; set; }
         public DbSet<LibraryCard> LibraryCards { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<BookNotificationRequest> BookNotificationRequests { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
         public DbSet<IdentityRole> IdentityRoles { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)

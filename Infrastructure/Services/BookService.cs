@@ -31,7 +31,7 @@ namespace Infrastructure.Services
                 throw new ArgumentNullException(nameof(createBookDTO));
 
             var bookToCreate = _mapper.Map<Book>(createBookDTO);
-            var existingBook = await _bookRepository.GetByIdAsync(bookToCreate.Id);
+            var existingBook = await _bookRepository.GetByTitleAsync(bookToCreate.Title);
 
             if (existingBook != null)
             {
@@ -43,6 +43,23 @@ namespace Infrastructure.Services
             if (existingAuthor == null)
             {
                 throw new AuthorNotFoundException($"Author with id {bookToCreate.AuthorId} not found");
+            }
+
+            if(createBookDTO.Picture.Length > 0)
+            {
+                using( var ms = new MemoryStream())
+                {
+                    await createBookDTO.Picture.CopyToAsync(ms);
+                    
+                    if(ms.Length < 2097152) // 2MB
+                    {
+                        bookToCreate.PictureSource = ms.ToArray();
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Picture size exceeds the 2MB limit.");
+                    }
+                }
             }
 
             var book = await _bookRepository.AddAsync(bookToCreate);
@@ -248,6 +265,11 @@ namespace Infrastructure.Services
             if (!result)
             {
                 throw new InvalidOperationException($"Failed to update book rating for book with id {updateBookRatingDTO.BookId}");
+            }
+
+            if(((int)bookToUpdate.Rating) < 0 || ((int)bookToUpdate.Rating) > 5)
+            {
+                throw new ArgumentOutOfRangeException(nameof(updateBookRatingDTO.Rating), "Rating must be between 0 and 5");
             }
 
             _logger.LogInformation("Successfully updated rating for book ID: {BookId}", updateBookRatingDTO.BookId);

@@ -1,9 +1,13 @@
 ﻿using Abstractions.Repositories;
+using Application.EventHadlers;
 using Application.Mappers;
 
 using Application.Services.Interfaces;
 using AutoMapper;
+using Domain.Abstractions.Repositories;
 using Domain.Entities;
+using Domain.Events;
+using Infrastructure.Events;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -49,6 +53,7 @@ namespace Infrastructure.Configurations
             services.AddScoped<ILibraryCardRepository, LibraryCardRepository>();
             services.AddScoped<IReservingBookRepository, ReservingBookRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
+            services.AddScoped<IBookRequestRepository, BookRequestRepository>();
 
             services.AddScoped<IAuthorService, AuthorService>();
             services.AddScoped<IBookService, BookService>();
@@ -56,6 +61,10 @@ namespace Infrastructure.Configurations
             services.AddScoped<IReservingBookService, ReservingBookService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IBookRequestService, BookRequestService>();
+
+            services.AddScoped<IDomainEventHandler<BookBecameAvailableEvent>, BookAvailabilityNotificationHandler>();
+            services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
 
             return services;
         }

@@ -22,8 +22,8 @@ namespace Domain.Entities
 
         public Guid? BookId { get; set; }
         public string Message { get; set; }
-        public bool IsRead { get; set; }
+        public bool IsRead { get; set; } = false;
         public NotificationType NotificationType { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

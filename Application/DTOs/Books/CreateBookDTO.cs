@@ -1,6 +1,7 @@
 ﻿using Application.DTOs.Authors;
 using Domain.Entities;
 using Domain.Enums;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,5 +23,6 @@ namespace Application.DTOs.Books
         public string Publisher { get; set; }
         public int PublishingYear { get; set; }
         public List<Author> Authors { get; set; } = [];
+        public IFormFile? Picture { get; set; }
     }
 }

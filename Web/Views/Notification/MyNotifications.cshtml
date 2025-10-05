@@ -1,0 +1,43 @@
+﻿@model IEnumerable<Application.DTOs.Notitfications.GetNotificationDTO>
+<h1>My Notifications</h1>
+@if (Model.Any())
+{
+	<table>
+		<thead>
+			<tr>
+				<th>
+					NotificationType
+				</th>
+				<th>
+					Message
+				</th>
+				<th>
+					CreatedAt
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var notification in Model)
+			{
+				<tr>
+					<td>
+						@notification.NotificationType.ToString()
+					</td>
+					<td>
+						@notification.UserId
+					</td>
+					<td>
+						@notification.Message
+					</td>
+					<td>
+						@notification.CreatedAt
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+else
+{
+	<h3>No notifications found</h3>
+}

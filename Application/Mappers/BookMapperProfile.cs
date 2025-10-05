@@ -14,7 +14,9 @@ namespace Application.Mappers
         public BookMapperProfile()
         {
             CreateMap<CreateBookDTO, Book>();
-            CreateMap<Book, GetBookDTO>();
+            CreateMap<Book, GetBookDTO>()
+                .ForMember(dest => dest.PictureUrl,
+                opt => opt.MapFrom(src => $"/books/{src.Id}/picture"));
             CreateMap<UpdateBookDTO, Book>();
             CreateMap<Book, UpdateBookDTO>();
         }

@@ -25,20 +25,9 @@ namespace Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(CreateUserDTO createUserDTO)
         {
-            try
-            {
-                await _userService.CreateUserAsync(createUserDTO);
-                return RedirectToAction("GetAllUsersAsync", "User");
-            }
-            catch (UserExistsException ex)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-            }
-            return View("Error", createUserDTO);
+            await _userService.CreateUserAsync(createUserDTO);
+
+            return RedirectToAction("GetAllUsersAsync", "User");
         }
         [HttpGet]
         public IActionResult Login()
@@ -53,7 +42,7 @@ namespace Web.Controllers
                 var user = await _userService.AuthenticateAsync(loginUserDTO);
                 if (user != null)
                 {
-                    return View("AccountDashboard",user);
+                    return View("AccountDashboard", user);
                 }
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
             }
@@ -82,7 +71,7 @@ namespace Web.Controllers
         public async Task<GetUserDTO> ChangePassword(ChangePasswordDTO changePasswordDTO)
         {
             var id = _userManager.GetUserId(HttpContext.User);
-            changePasswordDTO.UserId= Guid.Parse(id);
+            changePasswordDTO.UserId = Guid.Parse(id);
             var user = await _userService.ChangePasswordAsync(changePasswordDTO);
 
             return user;

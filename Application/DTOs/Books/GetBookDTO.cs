@@ -1,5 +1,6 @@
 ﻿using Domain.Entities;
 using Domain.Enums;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +21,7 @@ namespace Application.DTOs.Books
         public DateTime CreatedAt { get; set; }
         public bool IsAvailable { get; set; }
         public Rating Rating { get; set; }
+        public string PictureUrl { get; set; }
         public DateTime LastUpdatedAt { get; set; }
     }
 }

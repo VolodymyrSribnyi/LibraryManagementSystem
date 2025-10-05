@@ -17,6 +17,7 @@ namespace Domain.Entities
         public LibraryCard? LibraryCard { get; set; }
         public List<Reservation> ReservedBooks { get; set; } = [];
         public List<Notification> Notifications { get; set; } = [];
+        public List<BookNotificationRequest> BookSubscriptions { get; set; } = [];
         public DateTime CreatedAt { get; set; } 
     }
 }

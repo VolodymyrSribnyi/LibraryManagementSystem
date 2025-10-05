@@ -6,6 +6,7 @@
 	<p>@User.Identity.Name</p>
 
 	<a asp-controller="ReservingBook" asp-action="GetUserActiveReservations">My Reservations</a>
+	<a asp-controller="Notification" asp-action="MySubscriptions">My Subscriptions</a>
 
 	<form method="post" asp-controller="User" asp-action="Logout">
 		<input type="submit" value="Logout" />

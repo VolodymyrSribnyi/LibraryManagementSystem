@@ -1,5 +1,6 @@
 ﻿using Abstractions.Repositories;
 using Domain.Entities;
+using Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -18,16 +19,25 @@ namespace Infrastructure.Repositories
         }
         public async Task<bool> ReturnBookAsync(Guid id)
         {
-            var reservationToCancel = await _libraryContext.Reservations.FindAsync(id);
+            using var transaction = await _libraryContext.Database.BeginTransactionAsync();
+            try
+            {
+                var reservationToCancel = await _libraryContext.Reservations.FindAsync(id);
 
-            reservationToCancel.IsReturned = true;
-            var user = await _libraryContext.Users.FindAsync(reservationToCancel.UserId);
+                reservationToCancel.IsReturned = true;
+                var user = await _libraryContext.Users.FindAsync(reservationToCancel.UserId);
 
-            user.ReservedBooks.Remove(reservationToCancel);
+                user.ReservedBooks.Remove(reservationToCancel);
 
-            await _libraryContext.SaveChangesAsync();
+                await _libraryContext.SaveChangesAsync();
 
-            return true;
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
         }
 
         public async Task<IEnumerable<Reservation>> GetActiveReservationsAsync()
@@ -64,15 +74,25 @@ namespace Infrastructure.Repositories
 
         public async Task<Reservation> ReserveBookAsync(Reservation reservation)
         {
-            reservation.Book = await _libraryContext.Books.FirstOrDefaultAsync(b => b.Id == reservation.BookId);
-            reservation.User = await _libraryContext.ApplicationUsers.FirstOrDefaultAsync(u => u.Id == reservation.UserId);
-            reservation.Book.IsAvailable = false;
-            reservation.User.ReservedBooks.Add(reservation);
-            var createdReservation = _libraryContext.Reservations.Add(reservation).Entity;
+            using var transaction = await _libraryContext.Database.BeginTransactionAsync();
+            try
+            {
+                reservation.Book = await _libraryContext.Books.FirstOrDefaultAsync(b => b.Id == reservation.BookId);
+                reservation.User = await _libraryContext.ApplicationUsers.FirstOrDefaultAsync(u => u.Id == reservation.UserId);
+                reservation.Book.IsAvailable = false;
+                reservation.User.ReservedBooks.Add(reservation);
 
-            await _libraryContext.SaveChangesAsync();
+                var createdReservation = _libraryContext.Reservations.Add(reservation).Entity;
 
-            return createdReservation;
+                await _libraryContext.SaveChangesAsync();
+
+                return createdReservation;
+            }
+            catch 
+            {
+                await transaction.RollbackAsync();
+                throw new BookReservationException("Unable to reserve book");
+            }
         }
         public async Task<bool> IsReservationExists(Reservation reservation)
         {

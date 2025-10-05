@@ -51,6 +51,11 @@ namespace Infrastructure.Configurations
                 .HasForeignKey(n => n.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.HasMany(u => u.BookSubscriptions)
+                .WithOne(bnr => bnr.User)
+                .HasForeignKey(bnr => bnr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
 
 
         }

@@ -1,0 +1,62 @@
+﻿@model Application.DTOs.Books.GetBookDTO
+
+<h1>@Model.Title</h1>
+<section>
+	@if (Model.PictureUrl != null)
+	{
+		<img src="@Model.PictureUrl" alt="Book Cover" style="max-width:200px; max-height:300px;" />
+	}
+</section>
+<section>
+	<p><strong>Author:</strong> @Model.Author.FullName</p>
+	<p><strong>Genre:</strong> @Model.Genre.ToString()</p>
+	<p><strong>Published Year:</strong> @Model.PublishingYear</p>
+	<p><strong>Rating:</strong></p>
+	<div>
+		@for(int i = 1; i<=5; i++)
+		{
+			if((int)Model.Rating >= i)
+			{
+				<span class="star filled">★</span>
+			}
+			else
+			{
+				<span class="star">☆</span>
+			}
+		}
+	</div>
+	<p><strong>Availability:</strong> @(Model.IsAvailable ? "Available" : "Not Available")</p>
+	@if (Model.IsAvailable)
+	{
+		<a class="btn btn-primary" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@Model.Id">Reserve this Book</a>
+	}
+	else
+	{
+		<a class="btn btn-secondary" asp-controller="Notification" asp-action="SubscribeToBookAvailability" asp-route-bookId="@Model.Id">Subscribe to Availability Notification</a>
+	}
+</section>
+<section>
+	<form asp-controller="Book" asp-action="UpdateBookRating" method="post">
+		<div class="form-group>
+			<label for="rating">Rate this book (1-5):</label><br />
+		    <input type="radio" class="form-check-input" id="1" name="rating" value="1" required />
+			<label class="form-check-label" for="1">★</label><br />
+			<input type="radio" class="form-check-input" id="2" name="rating" value="2" required />
+			<label class="form-check-label" for="2">★★</label><br />
+			<input type="radio" class="form-check-input" id="3" name="rating" value="3" required />
+			<label class="form-check-label" for="3">★★★</label><br />
+			<input type="radio" class="form-check-input" id="4" name="rating" value="4" required />
+			<label class="form-check-label" for="4">★★★★</label><br />
+			<input type="radio" class="form-check-input" id="5" name="rating" value="5" required />
+			<label class="form-check-label" for="5">★★★★★</label><br />
+			<input type="hidden" name="bookId" value="@Model.Id" />
+			</div>
+		<button type="submit" class="btn btn-success">Submit Rating</button>
+	</form>
+</section>
+<br />
+<section>
+	<a class="btn btn-secondary" asp-controller="Book" asp-action="DeleteBook" asp-route-id="@Model.Id">Delete</a>
+</section>
+
+

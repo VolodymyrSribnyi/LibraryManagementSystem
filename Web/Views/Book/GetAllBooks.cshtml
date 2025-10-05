@@ -6,67 +6,54 @@
 	<thead>
 		<tr>
 			<th>
-				Id
+				Title
 			</th>
-			<th>Title</th>
-
 			<th>
 				Author
 			</th>
 			<th>
-				Genre
-			</th>
-			<th>
-				Publisher
-			</th>
-			<th>PublishingYear</th>
-			<th>
-				CreatedAt
-			</th>
-			<th>
 				IsAvailable
 			</th>
-			<th>Rating</th>
 			<th>
-				LastUpdatedAt
+				Rating
 			</th>
-			<th>Reserve</th>
+			<th>
+				Reserve
+			</th>
+			<th>
+				Details
+			</th>
 		</tr>
 	</thead>
 	<tbody>
 		@foreach (var book in Model)
 		{
 			<tr>
-				<th>
-					@book.Id
-				</th>
-				<th>@book.Title</th>
-
-				<th>
+				<td>
+					@book.Title
+				</td>
+				<td>
 					@book.Author.FullName
-				</th>
-				<th>
-					@book.Genre
-				</th>
-				<th>
-					@book.Publisher
-				</th>
-				<th>@book.PublishingYear</th>
-				<th>
-					@book.CreatedAt
-				</th>
-				<th>
+				</td>
+				<td>
 					@book.IsAvailable
-				</th>
-				<th>
+				</td>
+				<td>
 					@book.Rating
-				</th>
-				<th>
-					@book.LastUpdatedAt
-				</th>
-				<th>
-					<a class="nav-link text-dark" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@book.Id">Reserve</a>
-				</th>
+				</td>
+				<td>
+					@if(!book.IsAvailable)
+					{
+						<a class="nav-link text-dark" asp-controller="Notification" asp-action="SubscribeToBookAvailability" asp-route-bookId="@book.Id">Subscribe To Book Availability</a>
+					}
+					else
+					{
+						<a class="nav-link text-dark" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@book.Id">Reserve</a>
+					}
+				</td>
+				<td>
+					<a class="nav-link text-dark" asp-controller="Book" asp-action="GetBookById" asp-route-id="@book.Id">Details</a>
+				</td>
 			</tr>
 		}
 	</tbody>
