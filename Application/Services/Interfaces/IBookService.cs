@@ -23,5 +23,6 @@ namespace Application.Services.Interfaces
         Task<IEnumerable<GetBookDTO>> GetAllByAuthorAsync(GetAuthorDTO getAuthorDTO);
         Task<IEnumerable<GetBookDTO>> GetAllByPublisherAsync(IEnumerable<string> publishers);
         Task<IEnumerable<GetBookDTO>> GetAllByGenresAsync(IEnumerable<Genre> genres);
+        Task<byte[]> GetBookPictureAsync(Guid bookId);
     }
 }

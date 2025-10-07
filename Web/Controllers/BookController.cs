@@ -13,14 +13,12 @@ namespace Web.Controllers
     public class BookController : Controller
     {
         private readonly IBookService _bookService;
-        private readonly IBookRepository _bookRepository;
         private readonly LibraryContext _context;
 
-        public BookController(IBookService bookService,LibraryContext context,IBookRepository bookRepository)
+        public BookController(IBookService bookService,LibraryContext context)
         {
             _bookService = bookService;
             _context = context;
-            _bookRepository = bookRepository;
         }
         [HttpGet]
         public IActionResult AddBook()
@@ -78,9 +76,9 @@ namespace Web.Controllers
         [HttpGet("books/{id}/picture")]
         public async Task<IActionResult> GetPicture(Guid id)
         {
-            var book = await _bookRepository.GetByIdAsync(id);
+            var book = await _bookService.GetBookPictureAsync(id);
 
-            return File(book.PictureSource, "image/jpeg");
+            return File(book, "image/jpeg");
         }
         [HttpGet]
         public async Task<IActionResult> GetAllBooks()

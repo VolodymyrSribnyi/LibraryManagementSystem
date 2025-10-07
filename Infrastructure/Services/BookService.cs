@@ -25,6 +25,20 @@ namespace Infrastructure.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _authorRepository = authorRepository ?? throw new ArgumentNullException(nameof(authorRepository));
         }
+        public async Task<byte[] > GetBookPictureAsync(Guid bookId)
+        {
+            if (bookId == Guid.Empty)
+                throw new ArgumentNullException(nameof(bookId));
+
+            var book = await _bookRepository.GetByIdAsync(bookId);
+
+            if (book == null)
+            {
+                throw new BookNotFoundException(bookId);
+            }
+
+            return book.PictureSource;
+        }
         public async Task<GetBookDTO> AddAsync(CreateBookDTO createBookDTO)
         {
             if (createBookDTO == null)
