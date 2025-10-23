@@ -1,5 +1,6 @@
 ﻿using Application.DTOs.Authors;
 using Application.DTOs.Books;
+using Application.Filters;
 using Domain.Entities;
 using Domain.Enums;
 using System;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace Application.Services.Interfaces
 {
+    
     public interface IBookService
     {
         Task<GetBookDTO> AddAsync(CreateBookDTO createBookDTO);
@@ -17,6 +19,7 @@ namespace Application.Services.Interfaces
         Task<bool> UpdateAvailabilityAsync(UpdateBookStatusDTO updateBookStatusDTO);
         Task<bool> UpdateRatingAsync(UpdateBookRatingDTO updateBookRatingDTO);
         Task<bool> DeleteAsync(Guid id);
+        Task<IEnumerable<GetBookDTO>> GetFilteredAsync(BookFilter bookFilter);
         Task<GetBookDTO> GetByTitleAsync(string title);
         Task<GetBookDTO> GetByIdAsync(Guid id);
         Task<IEnumerable<GetBookDTO>> GetAllAsync();

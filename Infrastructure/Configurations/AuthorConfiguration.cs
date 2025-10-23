@@ -32,6 +32,13 @@ namespace Infrastructure.Configurations
                 .HasMaxLength(50)
                 .IsRequired(false);
 
+            builder.Property(a => a.Age)
+                .IsRequired();
+
+            builder.Property(a => a.Description)
+                .HasMaxLength(2000)
+                .IsRequired();
+
             builder.HasMany(a => a.Books)
                 .WithOne(b => b.Author)
                 .HasForeignKey(b => b.AuthorId)

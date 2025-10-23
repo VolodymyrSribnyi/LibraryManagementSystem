@@ -7,13 +7,11 @@ using System.Threading.Tasks;
 
 namespace Domain.Entities
 {
-    //    + Id: Guid
-    //+ UserId: Guid
-    //+ BookId: Guid
-    //+ Message: string
-    //+ IsRead: bool
-    //+ NotificationType: enum
-    //+ CreatedAt: DateTime
+    /// <summary>
+    /// Represents a notification sent to a user, containing information about an event or action.
+    /// </summary>
+    /// <remarks>A notification is associated with a specific user and may optionally reference a related
+    /// book. Notifications can be marked as read or unread and include a message describing the event.</remarks>
     public class Notification
     {
         public Guid Id { get; set; }

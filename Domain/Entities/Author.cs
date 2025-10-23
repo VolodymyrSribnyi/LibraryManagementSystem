@@ -1,10 +1,11 @@
 ﻿namespace Domain.Entities
 {
-    //    + FirstName: string
-    //+ Surname: string
-    //+ MiddleName?: string
-    //+ Age: int
-    //+ Books: List<IBook>
+    /// <summary>
+    /// Represents an author, including their personal details, authored books, and metadata.
+    /// </summary>
+    /// <remarks>This class provides properties to store information about an author, such as their name, age,
+    /// and the books they have written. It also includes metadata like the creation timestamp and  a flag indicating
+    /// whether the author record is marked as deleted.</remarks>
     public class Author
     {
         public Guid Id { get; set; }
@@ -23,6 +24,7 @@
         }
         public int Age { get; set; }
         public List<Book> Books { get; set; }
+        public string Description { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public bool IsDeleted { get; set; }
     }

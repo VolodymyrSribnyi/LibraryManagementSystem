@@ -41,13 +41,6 @@ namespace Infrastructure.Configurations
                 cfg.AddProfile<UserMapperProfile>();
             });
 
-            //services.AddScoped<AuthorMapperProfile>();
-            //services.AddScoped<BookMapperProfile>();
-            //services.AddScoped<LibraryCardMapperProfile>();
-            //services.AddScoped<ReservingBookMapperProfile>();
-            //services.AddScoped<NotificationMapperProfile>();
-            //services.AddScoped<UserMapperProfile>();
-
             services.AddScoped<IAuthorRepository, AuthorRepository>();
             services.AddScoped<IBookRepository, BookRepository>();
             services.AddScoped<ILibraryCardRepository, LibraryCardRepository>();

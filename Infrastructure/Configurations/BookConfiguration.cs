@@ -2,11 +2,7 @@
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Infrastructure.Configurations
 {
@@ -42,14 +38,15 @@ namespace Infrastructure.Configurations
             builder.Property(b => b.CreatedAt)
                 .ValueGeneratedOnAdd();
 
-            //builder.Property(b => b.LastUpdatedAt)
-            //    .ValueGeneratedOnAddOrUpdate();
-
             builder.Property(b => b.IsAvailable)
                 .HasDefaultValue(true);
 
             builder.Property(b => b.Rating)
                 .HasDefaultValue(Rating.NotRated)
+                .IsRequired();
+
+            builder.Property(builder => builder.Description)
+                .HasMaxLength(2000)
                 .IsRequired();
 
             builder.Property(b => b.IsDeleted)

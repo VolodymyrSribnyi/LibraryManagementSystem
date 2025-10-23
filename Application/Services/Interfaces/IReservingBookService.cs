@@ -19,6 +19,8 @@ namespace Application.Services.Interfaces
         Task<bool> ReturnBookAsync(Guid id);
         Task<GetReservationDTO> GetByIdAsync(Guid id);
         Task<IEnumerable<GetReservationDTO>> GetByUserIdAsync(Guid userId);
+        Task<IEnumerable<GetReservationDTO>> GetReturnedByUserIdAsync(Guid userId);
+        Task<IEnumerable<GetReservationDTO>> GetActiveByUserIdAsync(Guid userId);
         /// <summary>
         /// Retrieves all reservations.
         /// </summary>

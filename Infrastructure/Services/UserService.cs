@@ -3,9 +3,13 @@ using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Exceptions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace Infrastructure.Services
 {
@@ -47,6 +51,14 @@ namespace Infrastructure.Services
             if (!result.Succeeded)
             {
                 throw new InvalidOperationException($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            }
+
+            if (result.Succeeded)
+            {
+                var usersCount = _userManager.Users.Count();
+                string role = usersCount == 1 ? "Admin" : "User";
+
+                await _userManager.AddToRoleAsync(user, role);
             }
 
             _logger.LogInformation($"User created with ID: {user.Id}");
@@ -160,10 +172,17 @@ namespace Infrastructure.Services
             if (loginUserDTO == null)
                 throw new ArgumentNullException(nameof(loginUserDTO), "Login data cannot be null");
 
+            var applicationUser = await _userManager.FindByNameAsync(loginUserDTO.UserName);
+
+            if (applicationUser == null)
+            {
+                throw new UserNotFoundException("User not found.");
+            }
+
             var user = await _signInManager.PasswordSignInAsync(
                 loginUserDTO.UserName,
                 loginUserDTO.Password,
-                isPersistent: false,
+                loginUserDTO.RememberMe,
                 lockoutOnFailure: false
             );
 
@@ -172,12 +191,7 @@ namespace Infrastructure.Services
                 throw new InvalidOperationException("Invalid login attempt.");
             }
 
-            var applicationUser = await _userManager.FindByNameAsync(loginUserDTO.UserName);
-
-            if (applicationUser == null)
-            {
-                throw new UserNotFoundException("User not found.");
-            }
+            
 
             _logger.LogInformation($"User {applicationUser.UserName} logged in successfully.");
             return _mapper.Map<GetUserDTO>(applicationUser);

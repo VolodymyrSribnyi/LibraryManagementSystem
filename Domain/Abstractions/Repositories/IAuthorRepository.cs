@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace Abstractions.Repositories
 {
-    //    + Add(IAuthor Author) : IAuthor
-    //+ Update(Guid id, IAuthor Author) : IAuthor
-    //+ Delete(Guid id) : bool
-    //+ GetById(Guid id) : IAuthor
-    //+ GetByFullName(string FullName) : IAuthor
-    //+GetAll() :List<IAuthor>
+    /// <summary>
+    /// Defines a contract for managing and retrieving <see cref="Author"/> entities in a data store.
+    /// </summary>
+    /// <remarks>This interface provides methods for adding, updating, deleting, and retrieving <see
+    /// cref="Author"/> entities. It supports both single-entity and collection-based operations, as well as filtering
+    /// and eager loading of related data through navigation properties.</remarks>
     public interface IAuthorRepository
     {
         Task<Author> AddAsync(Author author);
