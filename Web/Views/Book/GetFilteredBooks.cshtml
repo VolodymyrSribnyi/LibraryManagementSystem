@@ -1,0 +1,116 @@
+﻿@model IEnumerable<Application.DTOs.Books.GetBookDTO>
+
+<h1>Books</h1>
+
+<form asp-action="GetFilteredBooks">
+	<div class="form-group">
+		<label for="Authors">Author</label>
+		<select class="form-control" id="authorId" name="authorId">
+			<option value="">All Authors</option>
+			@foreach (var author in ViewBag.Authors)
+			{
+				<option value="@author.Id">@author.FullName</option>
+			}
+		</select>
+	</div>
+	<div class="form-group">
+		<label for="IsAvailable">Availability</label>
+		<select class="form-control" id="isAvailable" name="isAvailable">
+			<option value="">All</option>
+			<option value="true">Available</option>
+			<option value="false">Not Available</option>
+		</select>
+	</div>
+	<div class="form-group">
+		<label for="MinRating">Minimum Rating</label>
+		<input type="number" class="form-control" id="minRating" name="minRating" min="0" max="5" step="1" />
+	</div>
+	<div class="form-group">
+		<label for="Publishers">Publisher</label>
+		<select class="form-control" id="publisher" name="publisher">
+			<option value="">All Publishers</option>
+			@foreach (var publisher in ViewBag.Publishers)
+			{
+				<option value="@publisher">@publisher</option>
+			}
+		</select>
+	</div>
+	<div class="form-group">
+		<label for="Years">Publication Year</label>
+		<select class="form-control" id="year" name="year">
+			<option value="">All Years</option>
+			@foreach (var year in ViewBag.Years)
+			{
+				<option value="@year">@year</option>
+			}
+		</select>
+	</div>
+	<div class="form-group">
+		<label for="Genres">Genres</label>
+		<select class="form-control" id="genre" name="genre">
+			<option value="">All Genres</option>
+			@foreach (var genre in ViewBag.Genres)
+			{
+				<option value="@genre">@genre</option>
+			}
+		</select>
+	</div>
+	<button type="submit">Apply filter</button>
+</form>
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>
+				Title
+			</th>
+			<th>
+				Author
+			</th>
+			<th>
+				IsAvailable
+			</th>
+			<th>
+				Rating
+			</th>
+			<th>
+				Reserve
+			</th>
+			<th>
+				Details
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var book in Model)
+		{
+			<tr>
+				<td>
+					@book.Title
+				</td>
+				<td>
+					@book.Author.FullName
+				</td>
+				<td>
+					@book.IsAvailable
+				</td>
+				<td>
+					@book.Rating
+				</td>
+				<td>
+					@if (!book.IsAvailable)
+					{
+						<a class="nav-link text-dark" asp-controller="Notification" asp-action="SubscribeToBookAvailability" asp-route-bookId="@book.Id">Subscribe To Book Availability</a>
+					}
+					else
+					{
+						<a class="nav-link text-dark" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@book.Id">Reserve</a>
+					}
+				</td>
+				<td>
+					<a class="nav-link text-dark" asp-controller="Book" asp-action="GetBookById" asp-route-id="@book.Id">Details</a>
+				</td>
+			</tr>
+		}
+	</tbody>
+</table>

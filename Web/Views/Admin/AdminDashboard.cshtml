@@ -1,0 +1,19 @@
+﻿<h1>Admin Dashboard</h1>
+
+@if(User.Identity.IsAuthenticated)
+{
+	<p>Welcome, @User.Identity.Name!</p>
+	<a asp-controller="Book" asp-action="AddBook">Add New Book</a>
+	<a asp-controller="Book" asp-action="ManageBooks">Manage Books</a>
+	<a asp-controller="User" asp-action="ManageUsers">Manage Users</a>
+	<a asp-controller="Reservation" asp-action="ViewAllReservations">View All Reservations</a>
+	<a asp-controller="Notification" asp-action="ManageNotifications">Manage Notifications</a>
+	<form method="post" asp-controller="User" asp-action="Logout">
+		<input type="submit" value="Logout" />
+	</form>
+}
+else
+{
+	<a asp-controller="User" asp-action="Login">Login</a>
+	<a asp-controller="User" asp-action="Register">Register</a>
+}

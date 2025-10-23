@@ -10,11 +10,6 @@ using System.Threading.Tasks;
 
 namespace Application.DTOs.Books
 {
-    //    + Title: string
-    //+ Author: Author
-    //+Genre: enum
-    //+ Publisher: string
-    //+ PublishingYear: int
     public class CreateBookDTO
     {
         public string Title { get; set; }
@@ -22,6 +17,7 @@ namespace Application.DTOs.Books
         public Genre Genre { get; set; } 
         public string Publisher { get; set; }
         public int PublishingYear { get; set; }
+        public string Description { get; set; }
         public List<Author> Authors { get; set; } = [];
         public IFormFile? Picture { get; set; }
     }

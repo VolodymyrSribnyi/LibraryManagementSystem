@@ -1,16 +1,107 @@
 ﻿@model Application.DTOs.Books.GetBookDTO
+<head>
+	<link rel="stylesheet" href="~/css/GetBookById.css" />
+</head>
+<div class="book-detail-container">
+	<div class="book-header">
+		<div style="display: flex; gap: 40px; flex: 1;">
+			<div class="book-image-section">
+				<div class="book-image-wrapper">
+					@if (Model.PictureUrl != null)
+					{
+						<img src="@Model.PictureUrl" alt="Book Cover" style="max-width:200px; max-height:300px;" />
+					}
+				</div>
+			</div>
 
-<h1>@Model.Title</h1>
-<section>
-	@if (Model.PictureUrl != null)
-	{
-		<img src="@Model.PictureUrl" alt="Book Cover" style="max-width:200px; max-height:300px;" />
-	}
-</section>
-<section>
-	<p><strong>Author:</strong> @Model.Author.FullName</p>
+			<div class="book-main-info">
+				<h1 class="book-title">@Model.Title</h1>
+
+				<div class="rating-display">
+					<div class="stars-large">
+						@for (int i = 1; i <= 5; i++)
+						{
+							if ((int)Model.Rating >= i)
+							{
+								<span class="star filled">★</span>
+							}
+							else
+							{
+								<span class="star">☆</span>
+							}
+						}
+					</div>
+				</div>
+
+				<div class="book-details-grid">
+					<div class="detail-label">Автор</div>
+					<div class="detail-value"><a asp-controller="Author" asp-action="GetAuthorById" asp-route-id="@Model.Author.Id">@Model.Author.FullName</a></div>
+
+					<div class="detail-label">Видавництво</div>
+					<div class="detail-value">@Model.Publisher</div>
+
+					<div class="detail-label">Рік видання</div>
+					<div class="detail-value">@Model.PublishingYear</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="book-sidebar">
+			@if (Model.IsAvailable)
+			{
+				<a class="reserve-button" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@Model.Id">Reserve this Book</a>
+			}
+			else
+			{
+				<a class="reserve-button" asp-controller="Notification" asp-action="SubscribeToBookAvailability" asp-route-bookId="@Model.Id">Subscribe to Availability Notification</a>
+			}
+		</div>
+	</div>
+
+	<div class="description-section">
+		<h2 class="section-title">Description @Model.Title, @Model.Author.FullName</h2>
+		<p class ="description-text">@Model.Description</p>
+	</div>
+
+	<div class="rating-section">
+		<h2 class="section-title">Rate this book</h2>
+		<form class="rating-form" asp-controller="Book" asp-action="UpdateBookRating" method="post">
+			<div class="rating-options">
+				<div class="rating-option">
+					<input type="radio" id="rating1" name="rating" value="1" required />
+					<label for="1">★</label><br />
+				</div>
+				<div class="rating-option">
+					<input type="radio"  id="rating2" name="rating" value="2" required />
+					<label class="form-check-label" for="2">★★</label><br />
+				</div>
+				<div class="rating-option">
+					<input type="radio"  id="rating3" name="rating" value="3" required />
+					<label class="form-check-label" for="3">★★★</label><br />
+				</div>
+				<div class="rating-option">
+					<input type="radio" id="rating4" name="rating" value="4" required />
+					<label class="form-check-label" for="4">★★★★</label><br />
+				</div>
+				<div class="rating-option">
+					<input type="radio" class="form-check-input" id="rating5" name="rating" value="5" required />
+					<label class="form-check-label" for="5">★★★★★</label><br />
+				</div>
+				<input type="hidden" name="bookId" value="@Model.Id" />
+			</div>
+			<button type="submit" class="submit-rating-btn">Submit Rating</button>
+		</form>
+	</div>
+	<div>
+		<a class="delete-button asp-controller="Book" asp-action="DeleteBook" asp-route-id="@Model.Id">Delete</a>
+	</div>
+</div>
+
+@* <section>
+	<p><strong>Author:</strong><a asp-controller="Author" asp-action="GetAuthorById" asp-route-id="@Model.Author.Id">@Model.Author.FullName</a></p>
 	<p><strong>Genre:</strong> @Model.Genre.ToString()</p>
-	<p><strong>Published Year:</strong> @Model.PublishingYear</p>
+	<p><strong>Published Year:</strong> </p>
+	<p><strong>Description:</strong> @Model.Description</p>
 	<p><strong>Rating:</strong></p>
 	<div>
 		@for(int i = 1; i<=5; i++)
@@ -54,9 +145,7 @@
 		<button type="submit" class="btn btn-success">Submit Rating</button>
 	</form>
 </section>
-<br />
-<section>
-	<a class="btn btn-secondary" asp-controller="Book" asp-action="DeleteBook" asp-route-id="@Model.Id">Delete</a>
-</section>
+<br /> *@
+
 
 

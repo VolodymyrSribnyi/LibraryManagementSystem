@@ -1,10 +1,23 @@
 ﻿using Domain.Exceptions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Mvc.ViewFeatures.Infrastructure;
 using System.ComponentModel.DataAnnotations;
 
 namespace Web.Middleware
 {
+    /// <summary>
+    /// Middleware that handles exceptions thrown during the request pipeline, logs the errors,  and redirects the
+    /// response to appropriate error pages based on the exception type.
+    /// </summary>
+    /// <remarks>This middleware intercepts unhandled exceptions, determines the appropriate HTTP status code,
+    /// log level, and error message based on the exception type, and redirects the user to a predefined  error page. It
+    /// ensures that exceptions are logged with the appropriate severity and that users  receive a user-friendly error
+    /// response.  Common exception types handled include: - <see cref="NotFoundException"/>: Redirects to a "Not Found"
+    /// page with a 404 status code. - <see cref="UnauthorizedAccessException"/>: Redirects to an "Access Denied" page
+    /// with a 401 status code. - <see cref="ValidationException"/>: Logs a warning and redirects to a 400 error page. -
+    /// Other exceptions default to a 500 status code and a generic error page.  This middleware should be registered
+    /// early in the pipeline to ensure it can catch exceptions  from subsequent middleware components.</remarks>
     public class ErrorHandlerMiddleware
     {
         private readonly RequestDelegate _next;
@@ -24,68 +37,18 @@ namespace Web.Middleware
             {
                 await HandleExceptionAsync(context, ex);
             }
-            ////catch (BookNotFoundException ex)
-            ////{
-            ////    _logger.LogError(ex, $"Book not found. {ex.Message}");
-            ////    context.Response.StatusCode = StatusCodes.Status404NotFound;
-            ////    context.Response.ContentType = "application/json";
-            ////    var errorResponse = new { Message = ex.Message };
-            ////    await context.Response.WriteAsJsonAsync(errorResponse);
-            ////}
-            //catch (AuthorNotFoundException ex)
-            //{
-            //    _logger.LogError(ex, $"Author not found. {ex.Message}");
-            //    context.Response.StatusCode = StatusCodes.Status404NotFound;
-            //    context.Response.ContentType = "application/json";
-            //    var errorResponse = new { Message = ex.Message };
-            //    await context.Response.WriteAsJsonAsync(errorResponse);
-            //}
-            //catch (ArgumentNullException ex)
-            //{
-            //    _logger.LogError(ex, $"A required argument was null. {ex.Message}");
-            //    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            //    context.Response.ContentType = "application/json";
-            //    var errorResponse = new { Message = ex.Message };
-            //    await context.Response.WriteAsJsonAsync(errorResponse);
-            //}
-            //catch (NullReferenceException ex)
-            //{
-            //    _logger.LogError(ex, $"A null reference occurred. {ex.Message}");
-            //    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            //    context.Response.ContentType = "application/json";
-            //    var errorResponse = new { Message = "A required object was null." };
-            //    await context.Response.WriteAsJsonAsync(errorResponse);
-            //}
-            //catch (InvalidOperationException ex)
-            //{
-            //    _logger.LogError(ex, $"An invalid operation occurred. {ex.Message}");
-            //    context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            //    context.Response.ContentType = "application/json";
-            //    var errorResponse = new { Message = ex.Message };
-            //    await context.Response.WriteAsJsonAsync(errorResponse);
-            //}
-            //catch (UnauthorizedAccessException ex)
-            //{
-            //    _logger.LogWarning(ex, "Unauthorized access attempt.");
-            //    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            //    context.Response.ContentType = "application/json";
-            //    var errorResponse = new { Message = "Unauthorized access." };
-            //    await context.Response.WriteAsJsonAsync(errorResponse);
-            //}
-            //catch (Exception ex)
-            //{
-            //    _logger.LogCritical(ex, "An unhandled exception occurred.");
-            //    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            //    context.Response.ContentType = "application/json";
-            //    var errorResponse = new
-            //    {
-            //        Message = ex.Message,
-            //        Detail = context.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment() ? ex.StackTrace : null
-            //    };
-            //    await context.Response.WriteAsJsonAsync(errorResponse);
-            //}
         }
 
+        /// <summary>
+        /// Handles exceptions that occur during the processing of an HTTP request by logging the error and preparing an
+        /// appropriate HTTP response.
+        /// </summary>
+        /// <remarks>This method determines the appropriate HTTP status code, log level, and error message
+        /// based on the exception, logs the error using the configured logger, and sets the HTTP response status code
+        /// and content if the response has not already started.</remarks>
+        /// <param name="context">The <see cref="HttpContext"/> representing the current HTTP request and response.</param>
+        /// <param name="ex">The <see cref="Exception"/> that was thrown during request processing.</param>
+        /// <returns></returns>
         private async Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
             var (statusCode, message, logLevel) = GetErrorDetails(ex);
@@ -110,11 +73,28 @@ namespace Web.Middleware
             {
                 context.Response.StatusCode = statusCode;
 
-                await HandleError(context, ex, statusCode, message);
+                HandleError(context, ex, statusCode, message);
             }
         }
 
-        private async Task HandleError(HttpContext context, Exception ex, int statusCode, string message)
+        /// <summary>
+        /// Handles an error by redirecting the HTTP response to an appropriate error page based on the status code.
+        /// </summary>
+        /// <remarks>The method redirects the response to a predefined error page based on the provided
+        /// <paramref name="statusCode"/>.  Common status codes and their corresponding redirection paths include: <list
+        /// type="bullet"> <item><description>404: Redirects to "/Home/NotFound".</description></item>
+        /// <item><description>401: Redirects to "/User/AccessDenied".</description></item> <item><description>403:
+        /// Redirects to "/Home/Forbidden".</description></item> <item><description>409: Redirects to
+        /// "/Home/Conflict".</description></item> <item><description>All other status codes: Redirects to
+        /// "/Home/Error".</description></item> </list></remarks>
+        /// <param name="context">The <see cref="HttpContext"/> representing the current HTTP request and response.</param>
+        /// <param name="ex">The <see cref="Exception"/> that occurred. This parameter is not used in the redirection logic but may be
+        /// logged or processed elsewhere.</param>
+        /// <param name="statusCode">The HTTP status code representing the type of error. Determines the redirection path.</param>
+        /// <param name="message">A custom error message. This parameter is not used in the redirection logic but may be logged or displayed
+        /// elsewhere.</param>
+        /// <returns></returns>
+        private void HandleError(HttpContext context, Exception ex, int statusCode, string message)
         {
             var errorPath = statusCode switch
             {
@@ -128,15 +108,23 @@ namespace Web.Middleware
             context.Response.Redirect(errorPath);
         }
 
+        /// <summary>
+        /// Maps an exception to a corresponding HTTP status code, error message, and log level.
+        /// </summary>
+        /// <remarks>This method provides a standardized way to interpret exceptions in the context of
+        /// HTTP responses and logging. Specific exception types are mapped to predefined status codes, messages, and
+        /// log levels.  If the exception type is not explicitly handled, a default response of 500 Internal Server
+        /// Error with a critical log level is returned.</remarks>
+        /// <param name="exception">The exception to map. Must not be <see langword="null"/>.</param>
+        /// <returns>A tuple containing the HTTP status code, error message, and log level associated with the provided
+        /// exception.</returns>
         private (int statusCode, string message, LogLevel logLevel) GetErrorDetails(Exception exception)
         {
             return exception switch
             {
-                AuthorNotFoundException ex => (StatusCodes.Status404NotFound, ex.Message, LogLevel.Warning),
-                BookNotFoundException ex => (StatusCodes.Status404NotFound, ex.Message, LogLevel.Warning),
+                NotFoundException ex => (StatusCodes.Status404NotFound, ex.Message, LogLevel.Warning),
 
-                AuthorExistsException ex => (StatusCodes.Status409Conflict, ex.Message, LogLevel.Error),
-                UserExistsException ex => (StatusCodes.Status409Conflict, ex.Message, LogLevel.Error),
+                BadRequestException ex => (StatusCodes.Status400BadRequest, ex.Message, LogLevel.Error),
 
                 ArgumentNullException ex => (StatusCodes.Status400BadRequest,
                 "Required parameter is missing", LogLevel.Error),

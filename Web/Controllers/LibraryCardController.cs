@@ -1,5 +1,8 @@
 ﻿using Application.DTOs.LibraryCards;
 using Application.Services.Interfaces;
+using Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -8,16 +11,23 @@ namespace Web.Controllers
     public class LibraryCardController : Controller
     {
         private readonly ILibraryCardService _libraryCardService;
-        public LibraryCardController(ILibraryCardService libraryCardService)
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public LibraryCardController(ILibraryCardService libraryCardService,UserManager<ApplicationUser> userManager)
         {
             _libraryCardService = libraryCardService;
+            _userManager = userManager;
         }
-
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
-        public IActionResult CreateLibraryCard()
+        public async Task<IActionResult> CreateLibraryCard()
         {
-            return View();
+            var id = _userManager.GetUserId(HttpContext.User);
+            var user = await _userManager.FindByIdAsync(id);
+
+            return View(user);
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> CreateLibraryCard(Guid userId)
         {
@@ -25,6 +35,7 @@ namespace Web.Controllers
 
             return RedirectToAction("GetAllLibraryCards");
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public IActionResult GetAllLibraryCards()
         {
@@ -41,6 +52,7 @@ namespace Web.Controllers
             await _libraryCardService.UpdateAsync(updateLibraryCardDTO);
             return RedirectToAction("GetAllLibraryCards");
         }
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteLibraryCard(Guid userId)
         {
             await _libraryCardService.DeleteAsync(userId);

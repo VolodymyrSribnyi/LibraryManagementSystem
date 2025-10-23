@@ -21,6 +21,7 @@ namespace Application.DTOs.Books
         public DateTime CreatedAt { get; set; }
         public bool IsAvailable { get; set; }
         public Rating Rating { get; set; }
+        public string Description { get; set; }
         public string PictureUrl { get; set; }
         public DateTime LastUpdatedAt { get; set; }
     }

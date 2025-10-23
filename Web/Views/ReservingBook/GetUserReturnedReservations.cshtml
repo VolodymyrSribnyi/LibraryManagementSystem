@@ -1,8 +1,8 @@
 ﻿@model IEnumerable<Application.DTOs.Reservations.GetReservationDTO>
 
 <h1>Reservations</h1>
-<a asp-action="GetUserReturnedReservations">Returned reservations</a> 
-@if(Model.Any())
+<a asp-action="GetUserReturnedReservations">Active reservations</a>
+@if (Model.Any())
 {
 	<table>
 		<thead>
@@ -14,13 +14,10 @@
 					BookId
 				</th>
 				<th>
-					ReservedAt
+					Reserved At
 				</th>
 				<th>
-					EndsAt
-				</th>
-				<th>
-					Return
+					Ended At
 				</th>
 			</tr>
 		</thead>
@@ -39,9 +36,6 @@
 					</td>
 					<td>
 						@reservation.EndsAt
-					</td>
-					<td>
-						<a asp-controller="ReservingBook" asp-action="ReturnBook" asp-route-Id="@reservation.Id">Return</a>
 					</td>
 				</tr>
 			}

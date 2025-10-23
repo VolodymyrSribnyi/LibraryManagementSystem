@@ -21,9 +21,11 @@ namespace Web.Controllers
         public async Task<IActionResult> SubscribeToBookAvailability(Guid bookId)
         {
             var userId = Guid.Parse(_userManager.GetUserId(HttpContext.User));
+
             await _bookRequestService.CreateBookNotificationAsync(userId, bookId);
 
-            return View("MySubscriptions");
+            var subscriptions = await _bookRequestService.GetUserSubscriptionsAsync(userId);
+            return View("MySubscriptions", subscriptions);
         }
         public async Task<IActionResult> UnsubscribeFromBook(Guid requestId)
         {
@@ -44,10 +46,6 @@ namespace Web.Controllers
             var notifications = await _notificationService.GetUserNotificationsAsync(userId);
 
             return View(notifications);
-        }
-        public IActionResult Index()
-        {
-            return View();
         }
     }
 }

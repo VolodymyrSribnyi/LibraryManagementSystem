@@ -1,6 +1,7 @@
 ﻿using Application.DTOs.Authors;
 using Application.Services.Interfaces;
 using Domain.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -19,11 +20,13 @@ namespace Web.Controllers
             var authors = await _authorService.GetAllAsync();
             return View("GetAllAuthors", authors);
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public IActionResult AddAuthor()
         {
             return View();
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> AddAuthor(CreateAuthorDTO createAuthorDTO)
         {
@@ -42,6 +45,7 @@ namespace Web.Controllers
 
             return View("GetAuthorById", author);
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> UpdateAuthor(Guid id)
         {
@@ -52,13 +56,14 @@ namespace Web.Controllers
 
             return View(_authorService.MapToUpdateAuthorDTO(author));
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> UpdateAuthor(UpdateAuthorDTO updateAuthorDTO)
         {
             await _authorService.UpdateAsync(updateAuthorDTO);
             return RedirectToAction("GetAllAuthors");
         }
-        
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteAuthor(Guid id)
         {
             await _authorService.DeleteAsync(id);

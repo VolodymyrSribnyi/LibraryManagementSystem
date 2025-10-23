@@ -1,6 +1,7 @@
 ﻿using Application.DTOs.Reservations;
 using Application.Services.Interfaces;
 using Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,7 +27,7 @@ namespace Web.Controllers
         {
             var reservation = await _reservingBookService.ReserveBookAsync(createReservationDTO);
             
-            return RedirectToAction("GetAllReservations");
+            return RedirectToAction("GetUserActiveReservations");
         }
         public async Task<IActionResult> ReturnBook(Guid Id)
         {
@@ -34,6 +35,7 @@ namespace Web.Controllers
 
             return RedirectToAction("GetAllReservations");
         }
+        [HttpGet]
         public async Task<IActionResult> Details(Guid Id)
         {
             var reservation = await _reservingBookService.GetByIdAsync(Id);
@@ -41,29 +43,37 @@ namespace Web.Controllers
             return View(reservation);
         }
         [HttpGet]
+        [Authorize(Policy = "AdminOnly")]
+
         public async Task<IActionResult> GetAllReservations()
         {
             var reservations = await _reservingBookService.GetAllAsync();
 
             return View(reservations);
         }
+        [HttpGet]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> GetAllActiveReservations()
         {
             var reservations = await _reservingBookService.GetActiveReservationsAsync();
 
             return View(reservations);
         }
-        public async Task<IActionResult> GetUserActiveReservations()
+        [HttpGet]
+        public async Task<IActionResult> GetUserReturnedReservations()
         {
             Guid userId = Guid.Parse(_userManager.GetUserId(HttpContext.User));
-            var reservations = await _reservingBookService.GetByUserIdAsync(userId);
+            var reservations = await _reservingBookService.GetReturnedByUserIdAsync(userId);
 
             return View(reservations);
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> GetUserActiveReservations()
         {
-            return View();
+            Guid userId = Guid.Parse(_userManager.GetUserId(HttpContext.User));
+            var reservations = await _reservingBookService.GetActiveByUserIdAsync(userId);
+
+            return View(reservations);
         }
     }
 }

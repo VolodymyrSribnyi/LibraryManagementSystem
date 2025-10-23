@@ -1,48 +1,69 @@
 ﻿using Abstractions.Repositories;
 using Application.DTOs.Authors;
 using Application.DTOs.Books;
+using Application.Filters;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 
 namespace Web.Controllers
 {
     public class BookController : Controller
     {
         private readonly IBookService _bookService;
+        private readonly IAuthorService _authorService;
         private readonly LibraryContext _context;
 
-        public BookController(IBookService bookService,LibraryContext context)
+        public BookController(IBookService bookService,LibraryContext context, IAuthorService authorService)
         {
             _bookService = bookService;
             _context = context;
+            _authorService = authorService;
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public IActionResult AddBook()
         {
             return View(new CreateBookDTO { Authors = _context.Authors.ToList()});
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> AddBook(CreateBookDTO bookDTO)
         {
-            var book = await _bookService.AddAsync(bookDTO);
+            await _bookService.AddAsync(bookDTO);
 
             return RedirectToAction("GetAllBooks");
         }
-        
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteBook(Guid id)
         {
             await _bookService.DeleteAsync(id);
             return RedirectToAction("GetAllBooks");
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
-        public IActionResult UpdateBook()
+        public async Task<IActionResult> UpdateBook(Guid bookId)
         {
-            return View(new UpdateBookDTO { Authors = _context.Authors.ToList() });
+            var book = await _bookService.GetByIdAsync(bookId);
+            var updateBookDTO = new UpdateBookDTO
+            {
+                Id = book.Id,
+                Title = book.Title,
+                Description = book.Description,
+                Genre = book.Genre,
+                PublishingYear = book.PublishingYear,
+                Publisher = book.Publisher,
+                AuthorId = book.Author.Id,
+                Authors = _context.Authors.ToList()
+            };
+            return View(updateBookDTO);
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> UpdateBook(UpdateBookDTO updateBookDTO)
         {
@@ -80,9 +101,26 @@ namespace Web.Controllers
 
             return File(book, "image/jpeg");
         }
+        [HttpPost]
+        public async Task<IActionResult> GetFilteredBooks(BookFilter bookFilter)
+        {
+            await PopulateViewBagAsync();
+
+            var books = await _bookService.GetFilteredAsync(bookFilter);
+            return View("GetAllBooks", books);
+        }
+        private async Task PopulateViewBagAsync()
+        {
+            ViewBag.Authors = await _authorService.GetAllAsync();
+            ViewBag.Genres = Enum.GetValues(typeof(Genre)).Cast<Genre>().ToList();
+            var allBooks = await _bookService.GetAllAsync();
+            ViewBag.Publishers = allBooks.Select(b => b.Publisher).Distinct().ToList();
+            ViewBag.Years = allBooks.Select(b => b.PublishingYear).Distinct().OrderBy(y => y).ToList();
+        }
         [HttpGet]
         public async Task<IActionResult> GetAllBooks()
         {
+            await PopulateViewBagAsync();
             var books = await _bookService.GetAllAsync();
             return View("GetAllBooks", books);
         }
@@ -94,7 +132,7 @@ namespace Web.Controllers
             return View(books);
         }
         [HttpGet]
-        public async Task<IActionResult> GetAllBooksByAuthor(IEnumerable<Genre> genres)
+        public async Task<IActionResult> GetAllBooksByGenres(IEnumerable<Genre> genres)
         {
             var books = await _bookService.GetAllByGenresAsync(genres);
             return View(books);
@@ -105,11 +143,11 @@ namespace Web.Controllers
             var books = await _bookService.GetAllByPublisherAsync(publishers);
             return View(books);
         }
-        [HttpGet]
+        [HttpPost]
         public async Task<IActionResult> GetBookByTitle(string title)
         {
             var book = await _bookService.GetByTitleAsync(title);
-            return View(book);
+            return RedirectToAction("GetBookById", new { id = book.Id } );
         }
     }
 }

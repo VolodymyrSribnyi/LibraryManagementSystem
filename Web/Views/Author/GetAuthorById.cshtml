@@ -6,10 +6,8 @@
 <div>
 	
 	<h2>@Model.FirstName @Model.MiddleName @Model.Surname</h2>
-	<h3>Id: @Model.Id</h3>
-	<h3>Created at @Model.CreatedAt</h3>
 	<p><strong>Age:</strong> @Model.Age</p>
-	<h3>Books:</h3>
+	<p><strong>Biography:</strong> @Model.Description</p>
 	@if (Model.Books != null && Model.Books.Any())
 	{
 		<ul>

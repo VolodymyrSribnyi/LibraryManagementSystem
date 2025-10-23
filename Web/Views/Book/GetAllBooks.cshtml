@@ -1,60 +1,117 @@
 ﻿@model IEnumerable<Application.DTOs.Books.GetBookDTO>
+<head>
+	<link rel="stylesheet" href="~/css/GetAllBooks.css" />
 
+</head>
 <h1>Books</h1>
-
-<table class="table">
-	<thead>
-		<tr>
-			<th>
-				Title
-			</th>
-			<th>
-				Author
-			</th>
-			<th>
-				IsAvailable
-			</th>
-			<th>
-				Rating
-			</th>
-			<th>
-				Reserve
-			</th>
-			<th>
-				Details
-			</th>
-		</tr>
-	</thead>
-	<tbody>
-		@foreach (var book in Model)
-		{
-			<tr>
-				<td>
-					@book.Title
-				</td>
-				<td>
-					@book.Author.FullName
-				</td>
-				<td>
-					@book.IsAvailable
-				</td>
-				<td>
-					@book.Rating
-				</td>
-				<td>
-					@if(!book.IsAvailable)
+<div class="container">
+	<aside class="sidebar">
+		<form asp-action="GetBookByTitle" method="post" class="filter-group">
+			<div class="filter-group">
+				<label for="Title">Title</label>
+				<input type="text" class="form-control" id="Title" name="Title" placeholder="Enter book title" />
+			</div>
+			<button type="submit" class="btn btn-primary">Search by title</button>
+		</form>
+		<form asp-action="GetFilteredBooks" method="post" class="filter-group">
+			<div class="filter-group">
+				<label for="Authors">Author</label>
+				<select id="AuthorsId" name="AuthorsId" multiple>
+					@foreach (var author in ViewBag.Authors)
 					{
-						<a class="nav-link text-dark" asp-controller="Notification" asp-action="SubscribeToBookAvailability" asp-route-bookId="@book.Id">Subscribe To Book Availability</a>
+						<option value="@author.Id">@author.FullName</option>
+					}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label for="IsAvailable">Availability</label>
+				<select id="IsAvailable" name="IsAvailable">
+					<option value="">All</option>
+					<option value="true">Available</option>
+					<option value="false">Not Available</option>
+				</select>
+			</div>
+			<div class="filter-group">
+				<label for="MinRating">Minimum Rating</label>
+				<input type="number" class="form-control" id="MinRating" name="MinRating" min="0" max="5" step="1" placeholder="No minimum" />
+			</div>
+			<div class="filter-group">
+				<label for="Publishers">Publisher</label>
+				<select id="Publishers" name="Publishers" multiple>
+					@foreach (var publisher in ViewBag.Publishers)
+					{
+						<option value="@publisher">@publisher</option>
+					}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label for="Years">Publication Year</label>
+				<select id="Years" name="Years" multiple>
+					@foreach (var year in ViewBag.Years)
+					{
+						<option value="@year">@year</option>
+					}
+				</select>
+			</div>
+			<div class="filter-group">
+				<label for="Genres">Genres</label>
+				<select id="Genres" name="Genres" multiple>
+					@foreach (var genre in ViewBag.Genres)
+					{
+						<option value="@((int)genre)">@genre</option>
+					}
+				</select>
+			</div>
+			<button type="submit" class="btn btn-primary">Apply filter</button>
+		</form>
+	</aside>
+	<main class="books-grid">
+		@foreach(var book in Model)
+		{
+			<div class="book-card">
+				<div class="book-image">
+					@if (book.PictureUrl != null)
+					{
+						<img src="@book.PictureUrl" alt="Book Cover" class="book-cover" />
 					}
 					else
 					{
-						<a class="nav-link text-dark" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@book.Id">Reserve</a>
+						<span>📚</span>
 					}
-				</td>
-				<td>
-					<a class="nav-link text-dark" asp-controller="Book" asp-action="GetBookById" asp-route-id="@book.Id">Details</a>
-				</td>
-			</tr>
+				</div>
+			
+				<div class="book-info">
+					<div class="book-title"><a asp-controller="Book" asp-action="GetBookById" asp-route-id="@book.Id">@book.Title</a></div>
+					<div class="book-author">by @book.Author.FullName</div>
+					<div class="book-rating">
+						@for (int i = 1; i <= 5; i++)
+						{
+							if ((int)book.Rating >= i)
+							{
+								<span class="star filled">★</span>
+							}
+							else
+							{
+								<span class="star">☆</span>
+							}
+						}
+					</div>
+				</div>
+				@if (User.IsInRole("Admin"))
+				{
+					<a asp-controller="Book" asp-action="UpdateBook" asp-route-bookId="@book.Id">Edit Book</a>
+				}
+				<div class="book-availability">
+					@if (book.IsAvailable)
+					{
+						<a class="btn btn-primary" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@book.Id">Reserve this Book</a>
+					}
+					else
+					{
+						<span class="not-available">Not Available</span>
+					}
+				</div>
+			</div>
 		}
-	</tbody>
-</table>
+	</main>
+</div>	

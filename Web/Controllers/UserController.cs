@@ -2,9 +2,12 @@
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Domain.Exceptions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Web.Controllers
 {
@@ -27,7 +30,7 @@ namespace Web.Controllers
         {
             await _userService.CreateUserAsync(createUserDTO);
 
-            return RedirectToAction("GetAllUsersAsync", "User");
+            return RedirectToAction("GetAllUsers", "User");
         }
         [HttpGet]
         public IActionResult Login()
@@ -76,6 +79,7 @@ namespace Web.Controllers
 
             return user;
         }
+        [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> GetAllUsersAsync()
         {
@@ -83,13 +87,10 @@ namespace Web.Controllers
             return View(users);
         }
         [HttpGet]
-        public IActionResult AccountDashboard()
+        public async Task<IActionResult> AccountDashboard()
         {
             return View();
         }
-        public IActionResult Index()
-        {
-            return View();
-        }
+        
     }
 }
