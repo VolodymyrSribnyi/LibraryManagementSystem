@@ -15,11 +15,13 @@ namespace Infrastructure.Services
         private readonly IReservingBookRepository _reservingBookRepository;
         private readonly IBookRepository _bookRepository;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly INotificationService _notificationService;
         private readonly IDomainEventPublisher _domainEventPublisher;
         private readonly IMapper _mapper;
         private readonly ILogger<ReservingBookService> _logger;
         public ReservingBookService(IReservingBookRepository reservingBookRepository,IMapper mapper, IBookRepository bookRepository,
-            UserManager<ApplicationUser> userManager,ILogger<ReservingBookService> logger,IDomainEventPublisher domainEventPublisher)
+            UserManager<ApplicationUser> userManager,ILogger<ReservingBookService> logger,IDomainEventPublisher domainEventPublisher,
+            INotificationService notificationService)
         {
             _reservingBookRepository = reservingBookRepository;
             _mapper = mapper;
@@ -27,6 +29,7 @@ namespace Infrastructure.Services
             _userManager = userManager;
             _domainEventPublisher = domainEventPublisher;
             _logger = logger;
+            _notificationService = notificationService;
         }
         public async Task<GetReservationDTO> ReserveBookAsync(CreateReservationDTO createReservationDTO)
         {
@@ -61,6 +64,8 @@ namespace Infrastructure.Services
             {
                 throw new InvalidOperationException("Reservation could not be created.");
             }
+
+            await _notificationService.SendReservationConfirmationAsync(reservation.Id, user.Id, bookToReserve.Id);
 
             _logger.LogInformation("Reservation successfully created");
             return _mapper.Map<GetReservationDTO>(reservation);
@@ -108,7 +113,21 @@ namespace Infrastructure.Services
 
             return _mapper.Map<GetReservationDTO>(reservation);
         }
+        public async Task<IEnumerable<GetReservationDTO>> GetReturnedByUserIdAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                throw new ArgumentNullException(nameof(userId), "Reservation ID cannot be empty.");
 
+            var reservations = await _reservingBookRepository.GetReturnedByUserIdAsync(userId);
+
+            if (reservations == null || !reservations.Any())
+            {
+                _logger.LogInformation("No returned reservations found for this user.");
+                return Enumerable.Empty<GetReservationDTO>();
+            }
+
+            return _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
+        }
         public async Task<IEnumerable<GetReservationDTO>> GetByUserIdAsync(Guid userId)
         {
             if (userId == Guid.Empty)
@@ -122,6 +141,18 @@ namespace Infrastructure.Services
                 return Enumerable.Empty<GetReservationDTO>();
             }
 
+            return _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
+        }
+        public async Task<IEnumerable<GetReservationDTO>> GetActiveByUserIdAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                throw new ArgumentNullException(nameof(userId), "Reservation ID cannot be empty.");
+            var reservations = await _reservingBookRepository.GetActiveByUserIdAsync(userId);
+            if (reservations == null || !reservations.Any())
+            {
+                _logger.LogInformation("No active reservations found for this user.");
+                return Enumerable.Empty<GetReservationDTO>();
+            }
             return _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
         }
 

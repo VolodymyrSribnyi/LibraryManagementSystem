@@ -17,17 +17,27 @@ namespace Infrastructure.Repositories
         {
             _libraryContext = libraryContext;
         }
+        //HACK transaction
         public async Task<BookNotificationRequest> CreateSubscriptionAsync(BookNotificationRequest bookNotificationRequest)
         {
-            bookNotificationRequest.User = _libraryContext.Users.FirstOrDefault(u => u.Id == bookNotificationRequest.UserId);
-            bookNotificationRequest.Book = _libraryContext.Books.FirstOrDefault(b => b.Id == bookNotificationRequest.BookId);
-            bookNotificationRequest.User.BookSubscriptions.Add(bookNotificationRequest);
+            using var transaction = await _libraryContext.Database.BeginTransactionAsync();
+            try
+            {
+                bookNotificationRequest.User = _libraryContext.Users.FirstOrDefault(u => u.Id == bookNotificationRequest.UserId);
+                bookNotificationRequest.Book = _libraryContext.Books.FirstOrDefault(b => b.Id == bookNotificationRequest.BookId);
+                bookNotificationRequest.User.BookSubscriptions.Add(bookNotificationRequest);
 
-            await _libraryContext.BookNotificationRequests.AddAsync(bookNotificationRequest);
+                await _libraryContext.BookNotificationRequests.AddAsync(bookNotificationRequest);
 
-            await _libraryContext.SaveChangesAsync();
-
-            return bookNotificationRequest;
+                await _libraryContext.SaveChangesAsync();
+                transaction.Commit();
+                return bookNotificationRequest;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw new InvalidOperationException("Unable to create subscription");
+            }
         }
 
         public async Task<IEnumerable<BookNotificationRequest>> GetAllSubscriptionsAsync()

@@ -25,11 +25,12 @@ namespace Infrastructure.Repositories
                 var reservationToCancel = await _libraryContext.Reservations.FindAsync(id);
 
                 reservationToCancel.IsReturned = true;
-                var user = await _libraryContext.Users.FindAsync(reservationToCancel.UserId);
+                //var user = await _libraryContext.Users.FindAsync(reservationToCancel.UserId);
 
-                user.ReservedBooks.Remove(reservationToCancel);
+                //user.ReservedBooks.Remove(reservationToCancel);
 
                 await _libraryContext.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return true;
             }
@@ -71,6 +72,26 @@ namespace Infrastructure.Repositories
 
             return reservations;
         }
+        public async Task<IEnumerable<Reservation>> GetReturnedByUserIdAsync(Guid userId)
+        {
+            _libraryContext.Reservations.AsNoTracking();
+
+            var returnedReservations = await _libraryContext.Reservations
+                .Where(r => r.UserId == userId && r.IsReturned == true)
+                .ToListAsync();
+
+            return returnedReservations;
+        }
+        public async Task<IEnumerable<Reservation>> GetActiveByUserIdAsync(Guid userId)
+        {
+            _libraryContext.Reservations.AsNoTracking();
+
+            var activeReservations = await _libraryContext.Reservations
+                .Where(r => r.UserId == userId && r.IsReturned == false)
+                .ToListAsync();
+
+            return activeReservations;
+        }
 
         public async Task<Reservation> ReserveBookAsync(Reservation reservation)
         {
@@ -85,6 +106,7 @@ namespace Infrastructure.Repositories
                 var createdReservation = _libraryContext.Reservations.Add(reservation).Entity;
 
                 await _libraryContext.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return createdReservation;
             }

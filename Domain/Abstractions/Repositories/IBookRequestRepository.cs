@@ -7,6 +7,12 @@ using System.Threading.Tasks;
 
 namespace Domain.Abstractions.Repositories
 {
+    /// <summary>
+    /// Defines methods for managing book notification subscription requests.
+    /// </summary>
+    /// <remarks>This interface provides functionality to handle operations related to book notification
+    /// subscriptions, such as retrieving unnotified subscribers, creating and removing subscriptions, and checking
+    /// subscription status.</remarks>
     public interface IBookRequestRepository
     {
         Task<IEnumerable<BookNotificationRequest>> GetUnnotifiedSubscribersAsync(Guid bookId);

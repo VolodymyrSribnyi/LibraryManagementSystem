@@ -32,7 +32,7 @@ namespace Infrastructure.Repositories
 
                 user.Notifications.Add(notification);
                 await _libraryContext.SaveChangesAsync();
-
+                transaction.Commit();
                 return createdNotification;
             }
             catch

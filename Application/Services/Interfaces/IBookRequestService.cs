@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Application.Services.Interfaces
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public interface IBookRequestService
     {
         Task<BookNotificationRequest> CreateBookNotificationAsync(Guid userId, Guid bookId);

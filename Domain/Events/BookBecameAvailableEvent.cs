@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace Domain.Events
 {
+    /// <summary>
+    /// Represents an event that is triggered when a book becomes available.
+    /// </summary>
+    /// <remarks>This event contains information about the book that became available, including its unique
+    /// identifier, title, and the time the event occurred.
+    /// </remarks>
     public class BookBecameAvailableEvent : IDomainEvent
     {
         public BookBecameAvailableEvent(Guid bookId,string bookTitle)
@@ -19,7 +25,5 @@ namespace Domain.Events
         public Guid BookId { get; }
         public string Title { get; }
         public DateTime OccurredOn { get; } = DateTime.UtcNow;
-
-        
     }
 }

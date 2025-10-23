@@ -25,7 +25,7 @@ namespace Infrastructure.Events
         public async Task PublishAsync<TEvent>(TEvent domainEvent) where TEvent : IDomainEvent
         {
             // Get the handler type for the specific domain event
-            var handlerType = typeof(IDomainEventHandler<>).MakeGenericType(domainEvent.GetType());
+            Type? handlerType = typeof(IDomainEventHandler<>).MakeGenericType(domainEvent.GetType());
             // Resolve all registered handlers for the event type
             var handlers = _serviceProvider.GetServices(handlerType);
             // Invoke each handler's HandleAsync method

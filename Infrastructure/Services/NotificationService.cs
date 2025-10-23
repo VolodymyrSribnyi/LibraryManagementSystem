@@ -13,14 +13,17 @@ namespace Infrastructure.Services
     {
         private readonly INotificationRepository _notificationRepository;
         private readonly IReservingBookRepository _reservationRepository;
+        private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<NotificationService> _logger;
-        public NotificationService(INotificationRepository notificationRepository, IReservingBookRepository reservingBookRepository,IMapper mapper,ILogger<NotificationService> logger)
+        public NotificationService(INotificationRepository notificationRepository, IReservingBookRepository reservingBookRepository,IMapper mapper,
+            ILogger<NotificationService> logger,IBookRepository bookRepository)
         {
             _notificationRepository = notificationRepository ?? throw new ArgumentNullException(nameof(notificationRepository));
             _reservationRepository = reservingBookRepository ?? throw new ArgumentNullException(nameof(reservingBookRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _logger = logger ?? throw new ArgumentNullException( nameof(logger));
+            _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
         }
         public async Task<GetNotificationDTO> CreateNotification(CreateNotificationDTO createNotificationDTO)
         {
@@ -83,12 +86,16 @@ namespace Infrastructure.Services
             if (userId == Guid.Empty || bookId == Guid.Empty)
                 throw new ArgumentNullException("userId or bookId is empty");
 
+            var book = await  _bookRepository.GetByIdAsync(bookId);
+            if (book == null)
+                throw new BookNotFoundException(bookId);
+
             var notification = new Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 BookId = bookId,
-                Message = "The book you requested is now available.",
+                Message = $"The book with title {book.Title} you requested is now available.",
                 NotificationType = NotificationType.BookAvailable,
                 CreatedAt = DateTime.Now,
                 IsRead = false
