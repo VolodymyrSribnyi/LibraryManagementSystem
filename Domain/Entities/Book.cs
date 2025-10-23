@@ -7,15 +7,12 @@ using System.Threading.Tasks;
 
 namespace Domain.Entities
 {
-    //    + Id: Guid
-    //+ Title: string
-    //Author: Author
-    //+Genre: enum
-    //+ Publisher: string
-    //+ PublishingYear: int
-    //+ CreatedAt: DateTime
-    //+ IsAvailable: bool
-    //+ Rating : double
+    /// <summary>
+    /// Represents a book with details such as title, author, genre, publisher, and other metadata.
+    /// </summary>
+    /// <remarks>This class provides properties to store information about a book, including its author,
+    /// genre,  publication details, availability, and rating. It is designed to be used in systems that manage  book
+    /// collections, such as libraries or bookstores.</remarks>
     public class Book
     {
         public Guid Id { get; set; }
@@ -29,7 +26,7 @@ namespace Domain.Entities
         public bool IsAvailable { get; set; }
         public Rating Rating { get; set; }
         public byte[]? PictureSource { get; set; }
-        //public DateTime LastUpdatedAt { get; set; } = DateTime.Now;
+        public string Description { get; set; }
         public bool IsDeleted { get; set; }
     }
 }

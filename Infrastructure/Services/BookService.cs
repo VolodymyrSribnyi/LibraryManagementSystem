@@ -1,6 +1,7 @@
 ﻿using Abstractions.Repositories;
 using Application.DTOs.Authors;
 using Application.DTOs.Books;
+using Application.Filters;
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
@@ -8,6 +9,7 @@ using Domain.Enums;
 using Domain.Exceptions;
 using Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
 
 namespace Infrastructure.Services
 {
@@ -17,6 +19,7 @@ namespace Infrastructure.Services
         private readonly IMapper _mapper;
         private readonly ILogger<BookService> _logger;
         private readonly IAuthorRepository _authorRepository;
+        private const int _pictureSize= 2097152; // 2MB
 
         public BookService(IBookRepository bookRepository, IMapper mapper, ILogger<BookService> logger,IAuthorRepository authorRepository)
         {
@@ -58,24 +61,26 @@ namespace Infrastructure.Services
             {
                 throw new AuthorNotFoundException($"Author with id {bookToCreate.AuthorId} not found");
             }
-
-            if(createBookDTO.Picture.Length > 0)
+            if(createBookDTO.Picture!= null)
             {
-                using( var ms = new MemoryStream())
+                if (createBookDTO.Picture.Length > 0)
                 {
-                    await createBookDTO.Picture.CopyToAsync(ms);
-                    
-                    if(ms.Length < 2097152) // 2MB
+                    using (var ms = new MemoryStream())
                     {
-                        bookToCreate.PictureSource = ms.ToArray();
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Picture size exceeds the 2MB limit.");
+                        await createBookDTO.Picture.CopyToAsync(ms);
+
+                        if (ms.Length < _pictureSize)
+                        {
+                            bookToCreate.PictureSource = ms.ToArray();
+                        }
+                        else
+                        {
+                            throw new ArgumentException("Picture size exceeds the 2MB limit.");
+                        }
                     }
                 }
             }
-
+            
             var book = await _bookRepository.AddAsync(bookToCreate);
 
             if (book == null)
@@ -85,6 +90,51 @@ namespace Infrastructure.Services
 
             _logger.LogInformation($"Successfully created book with ID: {book.Id}");
             return _mapper.Map<GetBookDTO>(book);
+        }
+        public async Task<GetBookDTO> UpdateAsync(UpdateBookDTO updateBookDTO)
+        {
+            if (updateBookDTO == null)
+                throw new ArgumentNullException(nameof(updateBookDTO));
+
+            var bookToUpdate = await _bookRepository.GetByTitleAsync(updateBookDTO.Title);
+
+            if (bookToUpdate == null)
+            {
+                throw new BookNotFoundException($"Book with title {updateBookDTO.Title} not found");
+            }
+
+            updateBookDTO.Id = bookToUpdate.Id;
+            _mapper.Map(updateBookDTO, bookToUpdate);
+
+            if (updateBookDTO.Picture != null)
+            {
+                if (updateBookDTO.Picture.Length > 0)
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        await updateBookDTO.Picture.CopyToAsync(ms);
+
+                        if (ms.Length < _pictureSize)
+                        {
+                            bookToUpdate.PictureSource = ms.ToArray();
+                        }
+                        else
+                        {
+                            throw new ArgumentException("Picture size exceeds the 2MB limit.");
+                        }
+                    }
+                }
+            }
+
+            var updatedBook = await _bookRepository.UpdateAsync(bookToUpdate);
+
+            if (updatedBook == null)
+            {
+                throw new InvalidOperationException($"Failed to update book with id: {updateBookDTO.Id}");
+            }
+
+            _logger.LogInformation("Successfully updated book with ID: {BookId}", updateBookDTO.Id);
+            return _mapper.Map<GetBookDTO>(bookToUpdate);
         }
 
         public async Task<bool> DeleteAsync(Guid id)
@@ -200,31 +250,7 @@ namespace Infrastructure.Services
             return _mapper.Map<GetBookDTO>(book);
         }
 
-        public async Task<GetBookDTO> UpdateAsync(UpdateBookDTO updateBookDTO)
-        {
-            if (updateBookDTO == null)
-                throw new ArgumentNullException(nameof(updateBookDTO));
-
-            var bookExists = await _bookRepository.GetByTitleAsync(updateBookDTO.Title);
-
-            if (bookExists == null)
-            {
-                throw new BookNotFoundException($"Book with title {updateBookDTO.Title} not found");
-            }
-
-            updateBookDTO.Id = bookExists.Id;
-            _mapper.Map(updateBookDTO, bookExists);
-
-            var updatedBook = await _bookRepository.UpdateAsync(bookExists);
-
-            if (updatedBook == null)
-            {
-                throw new InvalidOperationException($"Failed to update book with id: {updateBookDTO.Id}");
-            }
-
-            _logger.LogInformation("Successfully updated book with ID: {BookId}", updateBookDTO.Id);
-            return _mapper.Map<GetBookDTO>(bookExists);
-        }
+        
 
         public async Task<bool> UpdateAvailabilityAsync(UpdateBookStatusDTO updateBookStatusDTO)
         {
@@ -267,12 +293,18 @@ namespace Infrastructure.Services
                 throw new BookNotFoundException($"Book with id {updateBookRatingDTO.BookId} not found");
 
             }
+            //HACK додати до юзера список його оцінених книг та коли він хоче знову оцінити рейтинг книжки яку він оцінював то попередній рейтинг перезаписується
 
             var bookToUpdate = new Book
             {
                 Id = updateBookRatingDTO.BookId,
                 Rating = updateBookRatingDTO.Rating
             };
+
+            if (((int)bookToUpdate.Rating) < 0 || ((int)bookToUpdate.Rating) > 5)
+            {
+                throw new ArgumentOutOfRangeException(nameof(updateBookRatingDTO.Rating), "Rating must be between 0 and 5");
+            }
 
             var result = await _bookRepository.UpdateRatingAsync(bookToUpdate);
 
@@ -281,13 +313,37 @@ namespace Infrastructure.Services
                 throw new InvalidOperationException($"Failed to update book rating for book with id {updateBookRatingDTO.BookId}");
             }
 
-            if(((int)bookToUpdate.Rating) < 0 || ((int)bookToUpdate.Rating) > 5)
-            {
-                throw new ArgumentOutOfRangeException(nameof(updateBookRatingDTO.Rating), "Rating must be between 0 and 5");
-            }
-
             _logger.LogInformation("Successfully updated rating for book ID: {BookId}", updateBookRatingDTO.BookId);
             return true;
+        }
+
+        public async Task<IEnumerable<GetBookDTO>> GetFilteredAsync(BookFilter bookFilter)
+        {
+            if (bookFilter == null)
+                throw new ArgumentNullException(nameof(bookFilter));
+
+            bool? isAvailable = null;
+            if (!string.IsNullOrEmpty(bookFilter.IsAvailable))
+            {
+                isAvailable = bool.Parse(bookFilter.IsAvailable);
+            }
+
+            Expression<Func<Book, bool>> expr = b =>
+                (bookFilter.Years == null || !bookFilter.Years.Any() || bookFilter.Years.Contains(b.PublishingYear)) &&
+                (bookFilter.Genres == null || !bookFilter.Genres.Any() || bookFilter.Genres.Contains(b.Genre)) &&
+                (bookFilter.Publishers == null || !bookFilter.Publishers.Any() || bookFilter.Publishers.Contains(b.Publisher)) &&
+                (!bookFilter.MinRating.HasValue || b.Rating >= bookFilter.MinRating) &&
+                (bookFilter.AuthorsId == null || !bookFilter.AuthorsId.Any() || bookFilter.AuthorsId.Contains(b.AuthorId)) &&
+                (!isAvailable.HasValue || b.IsAvailable == isAvailable);
+
+            var filteredBooks = await _bookRepository.GetFilteredAsync(expr);
+
+            if (filteredBooks == null || !filteredBooks.Any())
+            {
+                _logger.LogInformation("No books found matching the specified filter criteria");
+                return Enumerable.Empty<GetBookDTO>();
+            }
+            return _mapper.Map<IEnumerable<GetBookDTO>>(filteredBooks);
         }
     }
 }

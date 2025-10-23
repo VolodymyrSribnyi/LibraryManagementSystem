@@ -1,4 +1,5 @@
 ﻿using Abstractions.Repositories;
+using Application.Filters;
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,15 @@ namespace Infrastructure.Repositories
 
             return true;
         }
+        public async Task<IEnumerable<Book>> GetFilteredAsync(Expression<Func<Book,bool>> filter)
+        {
+            var query = _libraryContext.Books
+                .AsNoTracking()
+                .Include(b => b.Author)
+                .Where(filter);
+
+            return await query.ToListAsync();
+        }
         public async Task<Book> Get(Expression<Func<Book, bool>> filter, string? includeProperties = null)
         {
             IQueryable<Book> query = _libraryContext.Set<Book>();
@@ -62,14 +72,14 @@ namespace Infrastructure.Repositories
         {
             IQueryable<Book> query = _libraryContext.Set<Book>();
 
-            if (filter!=null)
+            if (filter != null)
             {
                 query = query.Where(filter);
             }
-            if(!string.IsNullOrEmpty(includeProperties))
+            if (!string.IsNullOrEmpty(includeProperties))
             {
-                foreach(var property in includeProperties
-                    .Split(new char[] {','},StringSplitOptions.RemoveEmptyEntries))
+                foreach (var property in includeProperties
+                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(property);
                 }
@@ -111,15 +121,6 @@ namespace Infrastructure.Repositories
 
             return await GetAll(b => publishers.Contains(b.Publisher) && b.IsDeleted == false);
         }
-
-        public async Task<Book> GetByIdAsync(Guid id)
-        {
-            var book = await Get(b => b.Id == id && b.IsDeleted == false);
-            book.Author = await _libraryContext.Authors.FirstOrDefaultAsync(b => b.Id == book.AuthorId);
-
-            return book;
-        }
-
         public async Task<Book> GetByTitleAsync(string title)
         {
             _libraryContext.Books.AsNoTracking();
@@ -129,11 +130,21 @@ namespace Infrastructure.Repositories
             return book;
         }
 
+        public async Task<Book> GetByIdAsync(Guid id)
+        {
+            var book = await Get(b => b.Id == id && b.IsDeleted == false);
+            book.Author = await _libraryContext.Authors.FirstOrDefaultAsync(b => b.Id == book.AuthorId);
+
+            return book;
+        }
+
+
+
         public async Task<Book> UpdateAsync(Book book)
         {
             var bookToUpdate = await _libraryContext.Books.FindAsync(book.Id);
 
-            
+
             bookToUpdate.Id = book.Id;
             bookToUpdate.Title = book.Title;
             bookToUpdate.AuthorId = book.AuthorId;
@@ -144,6 +155,8 @@ namespace Infrastructure.Repositories
             bookToUpdate.Rating = book.Rating;
             bookToUpdate.IsDeleted = book.IsDeleted;
             bookToUpdate.CreatedAt = book.CreatedAt;
+            bookToUpdate.PictureSource = book.PictureSource;
+            bookToUpdate.Description = book.Description;
             //bookToUpdate.LastUpdatedAt = DateTime.UtcNow;
 
             await _libraryContext.SaveChangesAsync();
@@ -166,7 +179,7 @@ namespace Infrastructure.Repositories
         {
             var bookToUpdate = await _libraryContext.Books.FindAsync(book.Id);
 
-            bookToUpdate.Rating = (Rating)(((int)book.Rating) + ((int)bookToUpdate.Rating)/2);
+            bookToUpdate.Rating = (Rating)(((int)book.Rating) + ((int)bookToUpdate.Rating) / 2);
 
             await _libraryContext.SaveChangesAsync();
 

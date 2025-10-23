@@ -9,24 +9,22 @@ using System.Threading.Tasks;
 
 namespace Abstractions.Repositories
 {
-    //    + Add(IBook book) : IBook
-    //+ Update(Guid id, IBook book) : IBook
-    //+ Delete(Guid id) : bool
-    //+ GetByTitle(string title) : IBook
-    //+ GetById(int or GUID) : IBook
-    //+ GetAll() : List<IBook>
-    //+ GetAllByAuthor(IAuthor author) : List<IBook>
-    //+ GetAllByPublisher(List<string> Publisher) : List<IBook>
-    //+ GetAllByGenres(enum genres) : List<IBook>
+    /// <summary>
+    /// Defines a contract for managing and querying book entities in a data store.
+    /// </summary>
+    /// <remarks>This interface provides methods for adding, updating, deleting, and retrieving books,  as
+    /// well as querying books based on various criteria such as title, author, publisher, or genres.  It supports
+    /// asynchronous operations to ensure scalability and responsiveness in data access.</remarks>
     public interface IBookRepository
     {
+        Task<Book> Get(Expression<Func<Book, bool>> filter, string? includeProperties = null);
+        Task<IEnumerable<Book>> GetAll(Expression<Func<Book, bool>>? filter = null, string? includeProperties = null);
         Task<Book> AddAsync(Book book);
         Task<Book> UpdateAsync(Book book);
         Task<bool> UpdateAvailabilityAsync(Book book);
         Task<bool> UpdateRatingAsync(Book book);
         Task<bool> DeleteAsync(Guid id);
-        Task<Book> Get(Expression<Func<Book, bool>> filter, string? includeProperties = null);
-        Task<IEnumerable<Book>> GetAll(Expression<Func<Book, bool>>? filter = null, string? includeProperties = null);
+        Task<IEnumerable<Book>> GetFilteredAsync(Expression<Func<Book,bool>> filter);
         Task<Book> GetByTitleAsync(string title);
         Task<Book> GetByIdAsync(Guid id);
         Task<IEnumerable<Book>> GetAllAsync();
