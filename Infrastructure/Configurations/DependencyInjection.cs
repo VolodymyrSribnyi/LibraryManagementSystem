@@ -30,7 +30,7 @@ namespace Infrastructure.Configurations
                 .AddEntityFrameworkStores<LibraryContext>()
                 .AddDefaultTokenProviders();
 
-            // Fix for CS1503: Use a lambda to configure AutoMapper  
+             
             services.AddAutoMapper(cfg =>
             {
                 cfg.AddProfile<AuthorMapperProfile>();
@@ -39,6 +39,7 @@ namespace Infrastructure.Configurations
                 cfg.AddProfile<ReservingBookMapperProfile>();
                 cfg.AddProfile<NotificationMapperProfile>();
                 cfg.AddProfile<UserMapperProfile>();
+                cfg.AddProfile<BookNotificationRequestMapperProfile>();
             });
 
             services.AddScoped<IAuthorRepository, AuthorRepository>();
@@ -46,7 +47,7 @@ namespace Infrastructure.Configurations
             services.AddScoped<ILibraryCardRepository, LibraryCardRepository>();
             services.AddScoped<IReservingBookRepository, ReservingBookRepository>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
-            services.AddScoped<IBookRequestRepository, BookRequestRepository>();
+            services.AddScoped<IBookNotificationRequestRepository, BookNotificationRequestRepository>();
 
             services.AddScoped<IAuthorService, AuthorService>();
             services.AddScoped<IBookService, BookService>();
@@ -54,7 +55,7 @@ namespace Infrastructure.Configurations
             services.AddScoped<IReservingBookService, ReservingBookService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IBookRequestService, BookRequestService>();
+            services.AddScoped<IBookNotificationRequestService, BookNotificationRequestService>();
 
             services.AddScoped<IDomainEventHandler<BookBecameAvailableEvent>, BookAvailabilityNotificationHandler>();
             services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();

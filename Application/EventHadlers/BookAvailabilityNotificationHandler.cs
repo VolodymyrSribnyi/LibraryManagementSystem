@@ -15,10 +15,10 @@ namespace Application.EventHadlers
     /// as notified and removes their subscriptions.</remarks>
     public class BookAvailabilityNotificationHandler : IDomainEventHandler<BookBecameAvailableEvent>
     {
-        private readonly IBookRequestRepository _bookRequestRepository;
+        private readonly IBookNotificationRequestRepository _bookRequestRepository;
         private readonly INotificationService _notificationService;
         private readonly ILogger<BookAvailabilityNotificationHandler> _logger;
-        public BookAvailabilityNotificationHandler(IBookRequestRepository bookRequestRepository, 
+        public BookAvailabilityNotificationHandler(IBookNotificationRequestRepository bookRequestRepository, 
             INotificationRepository notificationRepository, ILogger<BookAvailabilityNotificationHandler> logger,
             INotificationService notificationService)
         {

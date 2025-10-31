@@ -13,6 +13,11 @@ namespace Application.Services.Interfaces
     /// <typeparam name="TEvent"></typeparam>
     public interface IDomainEventHandler<in TEvent> where TEvent : IDomainEvent
     {
+        /// <summary>
+        /// Handles the specified domain event asynchronously.
+        /// </summary>
+        /// <param name="domainEvent">Event that handles</param>
+        /// <returns>Task of handled event</returns>
         Task HandleAsync(TEvent domainEvent);
 
     }

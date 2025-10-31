@@ -1,16 +1,11 @@
-﻿using Abstractions.Repositories;
+﻿using Application.ErrorHandling;
+using Abstractions.Repositories;
 using Application.DTOs.Authors;
-using Application.DTOs.Books;
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
-using Domain.Exceptions;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Infrastructure.Services
 {
@@ -19,71 +14,94 @@ namespace Infrastructure.Services
         private readonly IAuthorRepository _authorRepository;
         private readonly ILogger<AuthorService> _logger;
         private readonly IMapper _mapper;
-        public AuthorService(IAuthorRepository authorRepository, IMapper mapper,ILogger<AuthorService> logger)
+        public AuthorService(IAuthorRepository authorRepository, IMapper mapper, ILogger<AuthorService> logger)
         {
             _authorRepository = authorRepository;
             _mapper = mapper;
             _logger = logger;
         }
-        public async Task<GetAuthorDTO> AddAsync(CreateAuthorDTO createAuthorDTO)
+        public async Task<Result<GetAuthorDTO>> AddAsync(CreateAuthorDTO createAuthorDTO)
         {
             if (createAuthorDTO == null)
-                throw new ArgumentNullException(nameof(createAuthorDTO));
+            {
+                _logger.LogWarning($"{Errors.NullData.Code} AddAsync called with null CreateAuthorDTO");
+                return Result<GetAuthorDTO>.Failure(Errors.NullData);
+            }
+            if (string.IsNullOrWhiteSpace(createAuthorDTO.FirstName) ||
+                string.IsNullOrWhiteSpace(createAuthorDTO.Surname) ||
+                string.IsNullOrEmpty(createAuthorDTO.Description) ||
+                createAuthorDTO.Age <= 0)
+            {
+                _logger.LogWarning($"{Errors.InvalidData.Code} CreateAuthorDTO contains invalid data");
+                return Result<GetAuthorDTO>.Failure(Errors.InvalidData);
+            }
 
             var authorToCreate = _mapper.Map<Author>(createAuthorDTO);
             var existingAuthor = await _authorRepository.GetByIdAsync(authorToCreate.Id);
 
             if (existingAuthor != null)
             {
-                throw new AuthorExistsException($"Author {createAuthorDTO.FirstName} {createAuthorDTO.Surname} already exists");
+                _logger.LogInformation($"{Errors.AuthorExists.Code} Author with id {authorToCreate.Id} already exists");
+                return Result<GetAuthorDTO>.Failure(Errors.AuthorExists);
             }
 
             var author = await _authorRepository.AddAsync(authorToCreate);
 
             if (author == null)
             {
+                _logger.LogWarning($"Failed to create author with name {createAuthorDTO.FirstName} {createAuthorDTO.Surname}");
                 throw new InvalidOperationException($"Failed to create author with name {createAuthorDTO.FirstName} {createAuthorDTO.Surname}");
             }
 
             _logger.LogInformation($"Successfully added author with id {author.Id}");
-            return _mapper.Map<GetAuthorDTO>(author);
+            var authorDTO = _mapper.Map<GetAuthorDTO>(author);
+
+            return Result<GetAuthorDTO>.Success(authorDTO);
         }
-        public async Task<IEnumerable<GetAuthorDTO>> GetAllAsync()
+        public async Task<Result<IEnumerable<GetAuthorDTO>>> GetAllAsync()
         {
             var authors = await _authorRepository.GetAllAsync();
 
             if (authors == null || authors.Any() == false)
             {
                 _logger.LogInformation("No authors found in repository");
-                return Enumerable.Empty<GetAuthorDTO>();
+                return Result<IEnumerable<GetAuthorDTO>>.Success(Enumerable.Empty<GetAuthorDTO>());
             }
 
-            return _mapper.Map<IEnumerable<GetAuthorDTO>>(authors);
+            return Result<IEnumerable<GetAuthorDTO>>.Success(_mapper.Map<IEnumerable<GetAuthorDTO>>(authors));
         }
-        public async Task<GetAuthorDTO> GetByIdAsync(Guid id)
+        public async Task<Result<GetAuthorDTO>> GetByIdAsync(Guid id)
         {
             if (id == Guid.Empty)
-                throw new ArgumentNullException(nameof(id));
+            {
+                _logger.LogWarning("GetByIdAsync called with empty GUID");
+                return Result<GetAuthorDTO>.Failure(Errors.NullData);
+            }
 
             var author = await _authorRepository.GetByIdAsync(id);
 
             if (author == null)
             {
-                throw new AuthorNotFoundException($"Author with id {id} not found");
+                _logger.LogInformation($"Author with id {id} not found");
+                return Result<GetAuthorDTO>.Failure(Errors.AuthorNotFound);
             }
 
-            return _mapper.Map<GetAuthorDTO>(author);
+            return Result<GetAuthorDTO>.Success(_mapper.Map<GetAuthorDTO>(author));
         }
-        public async Task<GetAuthorDTO> UpdateAsync(UpdateAuthorDTO updateAuthorDTO)
+        public async Task<Result<GetAuthorDTO>> UpdateAsync(UpdateAuthorDTO updateAuthorDTO)
         {
             if (updateAuthorDTO == null)
-                throw new ArgumentNullException(nameof(updateAuthorDTO));
+            {
+                _logger.LogWarning("UpdateAsync called with null UpdateAuthorDTO");
+                return Result<GetAuthorDTO>.Failure(Errors.NullData);
+            }
 
             var authorExists = await _authorRepository.GetByIdAsync(updateAuthorDTO.Id);
 
             if (authorExists == null)
             {
-                throw new AuthorNotFoundException($"Author with id {updateAuthorDTO.Id} not found");
+                _logger.LogInformation($"Author with id {updateAuthorDTO.Id} not found");
+                return Result<GetAuthorDTO>.Failure(Errors.AuthorNotFound);
             }
 
             _mapper.Map(updateAuthorDTO, authorExists);
@@ -91,47 +109,57 @@ namespace Infrastructure.Services
 
             if (author == null)
             {
+                _logger.LogWarning($"Failed to update author with id {authorExists.Id}");
                 throw new InvalidOperationException($"Failed to update author with id {authorExists.Id}");
             }
 
-            return _mapper.Map<GetAuthorDTO>(authorExists);
+            return Result<GetAuthorDTO>.Success(_mapper.Map<GetAuthorDTO>(authorExists));
         }
-        public async Task<bool> DeleteAsync(Guid id)
+        public async Task<Result<bool>> DeleteAsync(Guid id)
         {
             if (id == Guid.Empty)
-                throw new ArgumentNullException(nameof(id));
+            {
+                _logger.LogWarning("DeleteAsync called with empty GUID");
+                return Result<bool>.Failure(Errors.NullData);
+            }
 
             var author = await _authorRepository.GetByIdAsync(id);
 
             if (author == null)
             {
-                throw new AuthorNotFoundException($"Author with id {id} not found");
+                _logger.LogInformation($"Author with id {id} not found");
+                return Result<bool>.Failure(Errors.AuthorNotFound);
             }
 
             var result = await _authorRepository.DeleteAsync(author.Id);
 
             if (!result)
             {
+                _logger.LogWarning($"Failed to delete author with id {id}");
                 throw new InvalidOperationException($"Failed to delete author with id {id}");
             }
 
             _logger.LogInformation("Successfully deleted author with ID: {authorId}", id);
-            return true;
+            return Result<bool>.Success(true);
         }
 
-        public async Task<GetAuthorDTO> GetByFullNameAsync(string surname)
+        public async Task<Result<GetAuthorDTO>> GetByFullNameAsync(string surname)
         {
             if (string.IsNullOrWhiteSpace(surname))
-                throw new ArgumentNullException(nameof(surname));
+            {
+                _logger.LogWarning("GetByFullNameAsync called with null or empty surname");
+                return Result<GetAuthorDTO>.Failure(Errors.NullData);
+            }
 
             var author = await _authorRepository.GetByFullNameAsync(surname);
 
             if (author == null)
             {
-                throw new AuthorNotFoundException($"Author with surname {surname} not found");
+                _logger.LogInformation($"Author with surname {surname} not found");
+                return Result<GetAuthorDTO>.Failure(Errors.AuthorNotFound);
             }
 
-            return _mapper.Map<GetAuthorDTO>(author);
+            return Result<GetAuthorDTO>.Success(_mapper.Map<GetAuthorDTO>(author));
         }
         public UpdateAuthorDTO MapToUpdateAuthorDTO(GetAuthorDTO getAuthorDTO)
         {

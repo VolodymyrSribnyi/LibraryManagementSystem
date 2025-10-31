@@ -1,4 +1,16 @@
 ﻿@model IEnumerable<Application.DTOs.Notitfications.GetNotificationDTO>
+@if (TempData["SuccessMessage"] != null)
+{
+	<div class="alert alert-success">
+		@TempData["SuccessMessage"]
+	</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+	<div class="alert alert-danger">
+		@TempData["ErrorMessage"]
+	</div>
+}
 <h1>My Notifications</h1>
 @if (Model.Any())
 {

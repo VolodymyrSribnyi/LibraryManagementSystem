@@ -13,7 +13,7 @@ namespace Domain.Abstractions.Repositories
     /// <remarks>This interface provides functionality to handle operations related to book notification
     /// subscriptions, such as retrieving unnotified subscribers, creating and removing subscriptions, and checking
     /// subscription status.</remarks>
-    public interface IBookRequestRepository
+    public interface IBookNotificationRequestRepository
     {
         /// <summary>
         /// Retrieves a collection of subscribers who have not yet been notified about the specified book.

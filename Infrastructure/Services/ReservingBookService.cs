@@ -1,5 +1,6 @@
 ﻿using Abstractions.Repositories;
 using Application.DTOs.Reservations;
+using Application.ErrorHandling;
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
@@ -19,8 +20,8 @@ namespace Infrastructure.Services
         private readonly IDomainEventPublisher _domainEventPublisher;
         private readonly IMapper _mapper;
         private readonly ILogger<ReservingBookService> _logger;
-        public ReservingBookService(IReservingBookRepository reservingBookRepository,IMapper mapper, IBookRepository bookRepository,
-            UserManager<ApplicationUser> userManager,ILogger<ReservingBookService> logger,IDomainEventPublisher domainEventPublisher,
+        public ReservingBookService(IReservingBookRepository reservingBookRepository, IMapper mapper, IBookRepository bookRepository,
+            UserManager<ApplicationUser> userManager, ILogger<ReservingBookService> logger, IDomainEventPublisher domainEventPublisher,
             INotificationService notificationService)
         {
             _reservingBookRepository = reservingBookRepository;
@@ -31,128 +32,167 @@ namespace Infrastructure.Services
             _logger = logger;
             _notificationService = notificationService;
         }
-        public async Task<GetReservationDTO> ReserveBookAsync(CreateReservationDTO createReservationDTO)
+        public async Task<Result<GetReservationDTO>> ReserveBookAsync(CreateReservationDTO createReservationDTO)
         {
             if (createReservationDTO == null)
-                throw new ArgumentNullException(nameof(createReservationDTO));
+            {
+                _logger.LogWarning("ReserveBookAsync called with null CreateReservationDTO.");
+                return Result<GetReservationDTO>.Failure(Errors.NullData);
+            }
 
             var reservationToCreate = _mapper.Map<Reservation>(createReservationDTO);
             var existingReservation = await _reservingBookRepository.IsReservationExists(reservationToCreate);
 
-            if (existingReservation == true)
+            if (existingReservation)
             {
-                throw new ReservationExistsException($"Reservation with for userId {reservationToCreate.UserId} and bookId {reservationToCreate.BookId} already exists.");
+                _logger.LogInformation($"Reservation already exists for userId {reservationToCreate.UserId} and bookId {reservationToCreate.BookId}");
+                return Result<GetReservationDTO>.Failure(Errors.ReservationExists);
             }
 
             var bookToReserve = await _bookRepository.GetByIdAsync(reservationToCreate.BookId);
 
             if (bookToReserve == null)
             {
-                throw new BookNotFoundException($"Book with id {reservationToCreate.BookId} not found");
+                _logger.LogInformation($"Book with ID {reservationToCreate.BookId} not found.");
+                return Result<GetReservationDTO>.Failure(Errors.BookNotFound);
             }
 
             var user = await _userManager.FindByIdAsync(reservationToCreate.UserId.ToString());
 
             if (user == null)
             {
-                throw new UserNotFoundException($"User with id {reservationToCreate.UserId} not found");
+                _logger.LogInformation($"User with ID {reservationToCreate.UserId} not found.");
+                return Result<GetReservationDTO>.Failure(Errors.UserNotFound);
             }
 
             var reservation = await _reservingBookRepository.ReserveBookAsync(reservationToCreate);
 
             if (reservation == null)
             {
-                throw new InvalidOperationException("Reservation could not be created.");
+                _logger.LogError($"Failed to create reservation for user {reservationToCreate.UserId} and book {reservationToCreate.BookId}");
+                return Result<GetReservationDTO>.Failure(Errors.ReservationCreationFailed);
             }
 
             await _notificationService.SendReservationConfirmationAsync(reservation.Id, user.Id, bookToReserve.Id);
 
-            _logger.LogInformation("Reservation successfully created");
-            return _mapper.Map<GetReservationDTO>(reservation);
+            _logger.LogInformation($"Successfully created reservation with ID: {reservation.Id}");
+            return Result<GetReservationDTO>.Success(_mapper.Map<GetReservationDTO>(reservation));
         }
-
-        public async Task<bool> ReturnBookAsync(Guid id)
+        public async Task<Result> ReturnBookAsync(Guid id)
         {
             if (id == Guid.Empty)
-                throw new ArgumentNullException(nameof(id), "Reservation ID cannot be empty.");
+            {
+                _logger.LogWarning("ReturnBookAsync called with empty reservation ID.");
+                return Result.Failure(Errors.NullData);
+            }
 
             var reservationToCancel = await _reservingBookRepository.GetByIdAsync(id);
 
             if (reservationToCancel == null)
             {
-                throw new ReservationNotFoundException($"Reservation with id {reservationToCancel.Id} not found");
+                _logger.LogInformation($"Reservation with ID {id} not found.");
+                return Result.Failure(Errors.ReservationNotFound);
             }
 
             reservationToCancel.Book = await _bookRepository.GetByIdAsync(reservationToCancel.BookId);
 
+            if (reservationToCancel.Book == null)
+            {
+                _logger.LogWarning($"Book with ID {reservationToCancel.BookId} not found for reservation {id}.");
+                return Result.Failure(Errors.BookNotFound);
+            }
 
             var result = await _reservingBookRepository.ReturnBookAsync(id);
 
             if (!result)
-                throw new BookReservationException($"Reservation with id {reservationToCancel.Id} unable to return");
+            {
+                _logger.LogError($"Failed to return book for reservation with ID {id}");
+                return Result.Failure(Errors.FailedToReturnBook);
+            }
 
-            var domainEvent = new BookBecameAvailableEvent(reservationToCancel.BookId,reservationToCancel.Book.Title);
-
+            var domainEvent = new BookBecameAvailableEvent(reservationToCancel.BookId, reservationToCancel.Book.Title);
             await _domainEventPublisher.PublishAsync(domainEvent);
 
-            _logger.LogInformation("Reservation successfully canceled");
-            return true;
+            _logger.LogInformation($"Successfully returned book for reservation with ID: {id}");
+            return Result.Success();
         }
 
-        public async Task<GetReservationDTO> GetByIdAsync(Guid id)
+        public async Task<Result<GetReservationDTO>> GetByIdAsync(Guid id)
         {
             if (id == Guid.Empty)
-                throw new ArgumentNullException(nameof(id), "Reservation ID cannot be empty.");
+            {
+                _logger.LogWarning("GetByIdAsync called with empty reservation ID.");
+                return Result<GetReservationDTO>.Failure(Errors.NullData);
+            }
 
             var reservation = await _reservingBookRepository.GetByIdAsync(id);
 
             if (reservation == null)
             {
-                throw new ReservationNotFoundException($"Reservation with id {reservation.Id} not found");
+                _logger.LogInformation($"Reservation with ID {id} not found.");
+                return Result<GetReservationDTO>.Failure(Errors.ReservationNotFound);
             }
 
-            return _mapper.Map<GetReservationDTO>(reservation);
+            return Result<GetReservationDTO>.Success(_mapper.Map<GetReservationDTO>(reservation));
         }
         public async Task<IEnumerable<GetReservationDTO>> GetReturnedByUserIdAsync(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId), "Reservation ID cannot be empty.");
+            {
+                _logger.LogWarning("GetReturnedByUserIdAsync called with empty userId.");
+                return Enumerable.Empty<GetReservationDTO>();
+            }
 
             var reservations = await _reservingBookRepository.GetReturnedByUserIdAsync(userId);
 
             if (reservations == null || !reservations.Any())
             {
-                _logger.LogInformation("No returned reservations found for this user.");
+                _logger.LogInformation($"No returned reservations found for user ID: {userId}");
                 return Enumerable.Empty<GetReservationDTO>();
             }
 
+            var reservationsDTO = _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
+
+           
+            _logger.LogInformation($"Retrieved {reservations.Count()} returned reservations for user ID: {userId}");
             return _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
         }
         public async Task<IEnumerable<GetReservationDTO>> GetByUserIdAsync(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId), "Reservation ID cannot be empty.");
+            {
+                _logger.LogWarning("GetByUserIdAsync called with empty userId.");
+                return Enumerable.Empty<GetReservationDTO>();
+            }
 
             var reservations = await _reservingBookRepository.GetByUserIdAsync(userId);
 
             if (reservations == null || !reservations.Any())
             {
-                _logger.LogInformation("No reservations found for this user.");
+                _logger.LogInformation($"No reservations found for user ID: {userId}");
                 return Enumerable.Empty<GetReservationDTO>();
             }
 
+            _logger.LogInformation($"Retrieved {reservations.Count()} reservations for user ID: {userId}");
             return _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
         }
         public async Task<IEnumerable<GetReservationDTO>> GetActiveByUserIdAsync(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId), "Reservation ID cannot be empty.");
-            var reservations = await _reservingBookRepository.GetActiveByUserIdAsync(userId);
-            if (reservations == null || !reservations.Any())
             {
-                _logger.LogInformation("No active reservations found for this user.");
+                _logger.LogWarning("GetActiveByUserIdAsync called with empty userId.");
                 return Enumerable.Empty<GetReservationDTO>();
             }
+
+            var reservations = await _reservingBookRepository.GetActiveByUserIdAsync(userId);
+
+            if (reservations == null || !reservations.Any())
+            {
+                _logger.LogInformation($"No active reservations found for user ID: {userId}");
+                return Enumerable.Empty<GetReservationDTO>();
+            }
+
+            _logger.LogInformation($"Retrieved {reservations.Count()} active reservations for user ID: {userId}");
             return _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
         }
 
@@ -162,10 +202,11 @@ namespace Infrastructure.Services
 
             if (reservations == null || !reservations.Any())
             {
-                _logger.LogInformation("No reservations found.");
+                _logger.LogInformation("No reservations found in the system.");
                 return Enumerable.Empty<GetReservationDTO>();
             }
 
+            _logger.LogInformation($"Retrieved {reservations.Count()} total reservations.");
             return _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
         }
 
@@ -175,10 +216,11 @@ namespace Infrastructure.Services
 
             if (reservations == null || !reservations.Any())
             {
-                _logger.LogInformation("No reservations found.");
+                _logger.LogInformation("No active reservations found in the system.");
                 return Enumerable.Empty<GetReservationDTO>();
             }
 
+            _logger.LogInformation($"Retrieved {reservations.Count()} active reservations.");
             return _mapper.Map<IEnumerable<GetReservationDTO>>(reservations);
         }
     }

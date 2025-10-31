@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories
 {
-    public class BookRequestRepository : IBookRequestRepository
+    public class BookNotificationRequestRepository : IBookNotificationRequestRepository
     {
         private readonly LibraryContext _libraryContext;
-        public BookRequestRepository(LibraryContext libraryContext)
+        public BookNotificationRequestRepository(LibraryContext libraryContext)
         {
             _libraryContext = libraryContext;
         }

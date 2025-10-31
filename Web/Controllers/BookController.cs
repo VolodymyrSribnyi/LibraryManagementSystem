@@ -17,39 +17,75 @@ namespace Web.Controllers
     {
         private readonly IBookService _bookService;
         private readonly IAuthorService _authorService;
-        private readonly LibraryContext _context;
 
-        public BookController(IBookService bookService,LibraryContext context, IAuthorService authorService)
+        public BookController(IBookService bookService, IAuthorService authorService)
         {
             _bookService = bookService;
-            _context = context;
             _authorService = authorService;
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpGet]
-        public IActionResult AddBook()
+        public async Task<IActionResult> AddBook()
         {
-            return View(new CreateBookDTO { Authors = _context.Authors.ToList()});
+            var authorsResult = await _authorService.GetAllAsync();
+
+            if (authorsResult.IsFailure)
+            {
+                TempData["Error"] = authorsResult.Error.Description;
+                return View(new CreateBookDTO { Authors = authorsResult.Value.ToList() });
+            }
+
+            return View(new CreateBookDTO { Authors = authorsResult.Value.ToList() });
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> AddBook(CreateBookDTO bookDTO)
         {
-            await _bookService.AddAsync(bookDTO);
+            var bookResult = await _bookService.AddAsync(bookDTO);
+
+            if (bookResult.IsFailure)
+            {
+                TempData["Error"] = bookResult.Error.Description;
+                return RedirectToAction("AddBook");
+            }
 
             return RedirectToAction("GetAllBooks");
         }
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteBook(Guid id)
         {
-            await _bookService.DeleteAsync(id);
+            var result = await _bookService.DeleteAsync(id);
+
+            if (result.IsFailure)
+            {
+                TempData["Error"] = result.Error.Description;
+                return RedirectToAction("GetAllBooks");
+            }
+
             return RedirectToAction("GetAllBooks");
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> UpdateBook(Guid bookId)
         {
-            var book = await _bookService.GetByIdAsync(bookId);
+            var bookResult = await _bookService.GetByIdAsync(bookId);
+
+            if(bookResult.IsFailure)
+            {
+                TempData["Error"] = bookResult.Error.Description;
+                return RedirectToAction("GetAllBooks");
+            }
+
+            var authorsResult = await _authorService.GetAllAsync();
+
+            if (authorsResult.IsFailure)
+            {
+                TempData["Error"] = authorsResult.Error.Description;
+                return RedirectToAction("GetAllBooks");
+            }
+
+            var book = bookResult.Value;
+
             var updateBookDTO = new UpdateBookDTO
             {
                 Id = book.Id,
@@ -59,7 +95,7 @@ namespace Web.Controllers
                 PublishingYear = book.PublishingYear,
                 Publisher = book.Publisher,
                 AuthorId = book.Author.Id,
-                Authors = _context.Authors.ToList()
+                Authors = authorsResult.Value.ToList()
             };
             return View(updateBookDTO);
         }
@@ -67,19 +103,35 @@ namespace Web.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateBook(UpdateBookDTO updateBookDTO)
         {
-            await _bookService.UpdateAsync(updateBookDTO);
+            var updateResult = await _bookService.UpdateAsync(updateBookDTO);
+            if (updateResult.IsFailure)
+            {
+                TempData["Error"] = updateResult.Error.Description;
+                return RedirectToAction("UpdateBook", new { bookId = updateBookDTO.Id });
+            }
             return RedirectToAction("GetAllBooks");
         }
         [HttpPost]
         public async Task<IActionResult> UpdateBookRating(UpdateBookRatingDTO updateBookDTO)
         {
-            await _bookService.UpdateRatingAsync(updateBookDTO);
+            var ratingResult = await _bookService.UpdateRatingAsync(updateBookDTO);
+
+            if (ratingResult.IsFailure)
+            {
+                TempData["Error"] = ratingResult.Error.Description;
+                return RedirectToAction("GetBookById", new { id = updateBookDTO.BookId });
+            }
             return RedirectToAction("GetAllBooks");
         }
         [HttpPost]
         public async Task<IActionResult> UpdateBookAvailability(UpdateBookStatusDTO updateBookStatusDTO)
         {
-            await _bookService.UpdateAvailabilityAsync(updateBookStatusDTO);
+            var result = await _bookService.UpdateAvailabilityAsync(updateBookStatusDTO);
+            if (result.IsFailure)
+            {
+                TempData["Error"] = result.Error.Description;
+                return RedirectToAction("GetBookById", new { id = updateBookStatusDTO.BookId });
+            }
             return Ok();
         }
         [HttpGet]
@@ -87,19 +139,25 @@ namespace Web.Controllers
         {
             var book = await _bookService.GetByIdAsync(id);
 
-            return View("GetBookById", book);
+            if (book.IsFailure)
+            {
+                TempData["Error"] = book.Error.Description;
+                return RedirectToAction("GetAllBooks");
+            }
+
+            return View("GetBookById", book.Value);
         }
-        /// <summary>
-        /// Викликається коли потрібно отримати зображення книги у вигляді файлу(браузер сам підвантажує ресурс)
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
         [HttpGet("books/{id}/picture")]
         public async Task<IActionResult> GetPicture(Guid id)
         {
             var book = await _bookService.GetBookPictureAsync(id);
 
-            return File(book, "image/jpeg");
+            if (book.IsFailure)
+            {
+                return NotFound(book.Error.Description);
+            }
+
+            return File(book.Value, "image/jpeg");
         }
         [HttpPost]
         public async Task<IActionResult> GetFilteredBooks(BookFilter bookFilter)
@@ -107,13 +165,19 @@ namespace Web.Controllers
             await PopulateViewBagAsync();
 
             var books = await _bookService.GetFilteredAsync(bookFilter);
-            return View("GetAllBooks", books);
+
+            return View("GetAllBooks", books.Value);
         }
         private async Task PopulateViewBagAsync()
         {
-            ViewBag.Authors = await _authorService.GetAllAsync();
+            var authorsResult = await _authorService.GetAllAsync();
+
+            ViewBag.Authors = authorsResult.Value;
             ViewBag.Genres = Enum.GetValues(typeof(Genre)).Cast<Genre>().ToList();
-            var allBooks = await _bookService.GetAllAsync();
+
+            var booksResult = await _bookService.GetAllAsync();
+            var allBooks = booksResult.Value;
+
             ViewBag.Publishers = allBooks.Select(b => b.Publisher).Distinct().ToList();
             ViewBag.Years = allBooks.Select(b => b.PublishingYear).Distinct().OrderBy(y => y).ToList();
         }
@@ -122,32 +186,40 @@ namespace Web.Controllers
         {
             await PopulateViewBagAsync();
             var books = await _bookService.GetAllAsync();
-            return View("GetAllBooks", books);
+            return View("GetAllBooks", books.Value);
         }
         [HttpGet]
         public async Task<IActionResult> GetAllBooksByAuthor(GetAuthorDTO authorDTO)
         {
             var books = await _bookService.GetAllByAuthorAsync(authorDTO);
-            
-            return View(books);
+
+            return View(books.Value);
         }
         [HttpGet]
         public async Task<IActionResult> GetAllBooksByGenres(IEnumerable<Genre> genres)
         {
             var books = await _bookService.GetAllByGenresAsync(genres);
-            return View(books);
+
+            return View(books.Value);
         }
         [HttpGet]
         public async Task<IActionResult> GetAllBooksByPublisher(IEnumerable<string> publishers)
         {
             var books = await _bookService.GetAllByPublisherAsync(publishers);
-            return View(books);
+            return View(books.Value);
         }
         [HttpPost]
         public async Task<IActionResult> GetBookByTitle(string title)
         {
             var book = await _bookService.GetByTitleAsync(title);
-            return RedirectToAction("GetBookById", new { id = book.Id } );
+
+            if (book.IsFailure)
+            {
+                TempData["ErrorMessage"] = book.Error.Description;
+                return RedirectToAction("GetAllBooks");
+            }
+
+            return RedirectToAction("GetBookById", new { id = book.Value.Id });
         }
     }
 }

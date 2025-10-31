@@ -1,5 +1,16 @@
 ﻿@model IEnumerable<Application.DTOs.Reservations.GetReservationDTO>
-
+@if (TempData["SuccessMessage"] != null)
+{
+	<div class="alert alert-success">
+		@TempData["SuccessMessage"]
+	</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+	<div class="alert alert-danger">
+		@TempData["ErrorMessage"]
+	</div>
+}
 <h1>Reservations</h1>
 <a asp-action="GetUserReturnedReservations">Returned reservations</a> 
 @if(Model.Any())
@@ -8,10 +19,7 @@
 		<thead>
 			<tr>
 				<th>
-					Id
-				</th>
-				<th>
-					BookId
+					Book Title
 				</th>
 				<th>
 					ReservedAt
@@ -29,10 +37,7 @@
 			{
 				<tr>
 					<td>
-						@reservation.Id
-					</td>
-					<td>
-						@reservation.BookId
+						@reservation.BookTitle
 					</td>
 					<td>
 						@reservation.ReservedAt

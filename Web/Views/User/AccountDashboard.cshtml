@@ -1,5 +1,16 @@
 ﻿@model Application.DTOs.Users.GetUserDTO
-
+@if (TempData["SuccessMessage"] != null)
+{
+	<div class="alert alert-success">
+		@TempData["SuccessMessage"]
+	</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+	<div class="alert alert-danger">
+		@TempData["ErrorMessage"]
+	</div>
+}
 <h1>User's Dashboard</h1>
 @if(User.Identity.IsAuthenticated)
 {
@@ -8,6 +19,7 @@
 	<a asp-controller="ReservingBook" asp-action="GetUserActiveReservations">My Reservations</a>
 	<a asp-controller="Notification" asp-action="MySubscriptions">My Subscriptions</a>
 	<a asp-controller="Notification" asp-action="MyNotifications">My Notifications</a>
+	<a asp-controller="User" asp-action="ChangePassword">Change password</a>
 
 	<form method="post" asp-controller="User" asp-action="Logout">
 		<input type="submit" value="Logout" />

@@ -2,6 +2,18 @@
 <head>
 	<link rel="stylesheet" href="~/css/GetBookById.css" />
 </head>
+@if (TempData["SuccessMessage"] != null)
+{
+	<div class="alert alert-success">
+		@TempData["SuccessMessage"]
+	</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+	<div class="alert alert-danger">
+		@TempData["ErrorMessage"]
+	</div>
+}
 <div class="book-detail-container">
 	<div class="book-header">
 		<div style="display: flex; gap: 40px; flex: 1;">
@@ -96,56 +108,4 @@
 		<a class="delete-button asp-controller="Book" asp-action="DeleteBook" asp-route-id="@Model.Id">Delete</a>
 	</div>
 </div>
-
-@* <section>
-	<p><strong>Author:</strong><a asp-controller="Author" asp-action="GetAuthorById" asp-route-id="@Model.Author.Id">@Model.Author.FullName</a></p>
-	<p><strong>Genre:</strong> @Model.Genre.ToString()</p>
-	<p><strong>Published Year:</strong> </p>
-	<p><strong>Description:</strong> @Model.Description</p>
-	<p><strong>Rating:</strong></p>
-	<div>
-		@for(int i = 1; i<=5; i++)
-		{
-			if((int)Model.Rating >= i)
-			{
-				<span class="star filled">★</span>
-			}
-			else
-			{
-				<span class="star">☆</span>
-			}
-		}
-	</div>
-	<p><strong>Availability:</strong> @(Model.IsAvailable ? "Available" : "Not Available")</p>
-	@if (Model.IsAvailable)
-	{
-		<a class="btn btn-primary" asp-controller="ReservingBook" asp-action="ReserveBook" asp-route-bookId="@Model.Id">Reserve this Book</a>
-	}
-	else
-	{
-		<a class="btn btn-secondary" asp-controller="Notification" asp-action="SubscribeToBookAvailability" asp-route-bookId="@Model.Id">Subscribe to Availability Notification</a>
-	}
-</section>
-<section>
-	<form asp-controller="Book" asp-action="UpdateBookRating" method="post">
-		<div class="form-group>
-			<label for="rating">Rate this book (1-5):</label><br />
-		    <input type="radio" class="form-check-input" id="1" name="rating" value="1" required />
-			<label class="form-check-label" for="1">★</label><br />
-			<input type="radio" class="form-check-input" id="2" name="rating" value="2" required />
-			<label class="form-check-label" for="2">★★</label><br />
-			<input type="radio" class="form-check-input" id="3" name="rating" value="3" required />
-			<label class="form-check-label" for="3">★★★</label><br />
-			<input type="radio" class="form-check-input" id="4" name="rating" value="4" required />
-			<label class="form-check-label" for="4">★★★★</label><br />
-			<input type="radio" class="form-check-input" id="5" name="rating" value="5" required />
-			<label class="form-check-label" for="5">★★★★★</label><br />
-			<input type="hidden" name="bookId" value="@Model.Id" />
-			</div>
-		<button type="submit" class="btn btn-success">Submit Rating</button>
-	</form>
-</section>
-<br /> *@
-
-
 

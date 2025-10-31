@@ -12,6 +12,7 @@ namespace Application.DTOs.Reservations
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
         public Guid BookId { get; set; }
+        public string BookTitle { get; set; }
         public DateTime ReservedAt { get; set; }
         public DateTime EndsAt { get; set; }
         public bool IsReturned { get; set; } 

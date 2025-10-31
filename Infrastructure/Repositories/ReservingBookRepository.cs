@@ -23,7 +23,9 @@ namespace Infrastructure.Repositories
             try
             {
                 var reservationToCancel = await _libraryContext.Reservations.FindAsync(id);
+                var book = await _libraryContext.Books.FindAsync(reservationToCancel.BookId);
 
+                book.IsAvailable = true;
                 reservationToCancel.IsReturned = true;
                 //var user = await _libraryContext.Users.FindAsync(reservationToCancel.UserId);
 
@@ -78,6 +80,7 @@ namespace Infrastructure.Repositories
 
             var returnedReservations = await _libraryContext.Reservations
                 .Where(r => r.UserId == userId && r.IsReturned == true)
+                .Include(r => r.Book)
                 .ToListAsync();
 
             return returnedReservations;
@@ -88,6 +91,7 @@ namespace Infrastructure.Repositories
 
             var activeReservations = await _libraryContext.Reservations
                 .Where(r => r.UserId == userId && r.IsReturned == false)
+                .Include(r => r.Book)
                 .ToListAsync();
 
             return activeReservations;
@@ -118,7 +122,7 @@ namespace Infrastructure.Repositories
         }
         public async Task<bool> IsReservationExists(Reservation reservation)
         {
-            return await _libraryContext.Reservations.AnyAsync(r => r.UserId == reservation.UserId && r.BookId == reservation.BookId);
+            return await _libraryContext.Reservations.AnyAsync(r => r.UserId == reservation.UserId && r.BookId == reservation.BookId && r.IsReturned == false);
         }
 
         

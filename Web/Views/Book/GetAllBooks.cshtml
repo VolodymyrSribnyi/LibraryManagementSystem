@@ -3,6 +3,19 @@
 	<link rel="stylesheet" href="~/css/GetAllBooks.css" />
 
 </head>
+@if (TempData["SuccessMessage"] != null)
+{
+	<div class="alert alert-success">
+		@TempData["SuccessMessage"]
+	</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+	<div class="alert alert-danger">
+		@TempData["ErrorMessage"]
+	</div>
+}
+
 <h1>Books</h1>
 <div class="container">
 	<aside class="sidebar">

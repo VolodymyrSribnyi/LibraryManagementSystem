@@ -13,9 +13,15 @@ namespace Application.Mappers
     {
         public ReservingBookMapperProfile()
         {
-            CreateMap<CreateReservationDTO, Reservation>();
-            CreateMap<Reservation, GetReservationDTO>();
+            CreateMap<CreateReservationDTO, Reservation>()
+                .ForMember(dest => dest.Book, opt => opt.Ignore())
+                .ForMember(dest => dest.User, opt => opt.Ignore());
+
+            CreateMap<Reservation, GetReservationDTO>()
+                .ForMember(dest => dest.BookTitle, opt => opt.MapFrom(src => src.Book.Title));
+
             CreateMap<UpdateReservationStatusDTO, Reservation>();
+                
         }
     }
 }

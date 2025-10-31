@@ -1,9 +1,7 @@
 ﻿using Application.DTOs.Authors;
 using Application.Services.Interfaces;
-using Domain.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 
 namespace Web.Controllers
 {
@@ -18,7 +16,8 @@ namespace Web.Controllers
         public async Task<IActionResult> GetAllAuthors()
         {
             var authors = await _authorService.GetAllAsync();
-            return View("GetAllAuthors", authors);
+
+            return View("GetAllAuthors", authors.Value);
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpGet]
@@ -30,7 +29,13 @@ namespace Web.Controllers
         [HttpPost]
         public async Task<IActionResult> AddAuthor(CreateAuthorDTO createAuthorDTO)
         {
-            await _authorService.AddAsync(createAuthorDTO);
+            var authorResult = await _authorService.AddAsync(createAuthorDTO);
+            if(authorResult.IsFailure)
+            {
+                TempData["ErrorMessage"] = authorResult.Error.Description;
+                return View(createAuthorDTO);
+            }
+            TempData["SuccessMessage"] = "Author added successfully!";
             return RedirectToAction("GetAllAuthors");
         }
         [HttpGet]
@@ -43,7 +48,13 @@ namespace Web.Controllers
         {
             var author = await _authorService.GetByIdAsync(id);
 
-            return View("GetAuthorById", author);
+            if(author.IsFailure)
+            {
+                TempData["ErrorMessage"] = author.Error.Description;
+                return View("GetAllAuthors");
+            }
+
+            return View("GetAuthorById", author.Value);
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpGet]
@@ -51,28 +62,47 @@ namespace Web.Controllers
         {
             var author = await _authorService.GetByIdAsync(id);
 
-            if(author == null)
-                return NotFound();
+            if(author.IsFailure)
+            {
+                TempData["ErrorMessage"] = author.Error.Description;
+                return RedirectToAction("GetAllAuthors");
+            }
 
-            return View(_authorService.MapToUpdateAuthorDTO(author));
+            return View(_authorService.MapToUpdateAuthorDTO(author.Value));
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> UpdateAuthor(UpdateAuthorDTO updateAuthorDTO)
         {
-            await _authorService.UpdateAsync(updateAuthorDTO);
+            var authorResult = await _authorService.UpdateAsync(updateAuthorDTO);
+
+            if(authorResult.IsFailure)
+            {
+                TempData["ErrorMessage"] = authorResult.Error.Description;
+                return View(updateAuthorDTO);
+            }
+
+            TempData["SuccessMessage"] = "Author updated successfully!";
             return RedirectToAction("GetAllAuthors");
         }
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteAuthor(Guid id)
         {
-            await _authorService.DeleteAsync(id);
+            var authorResult = await _authorService.DeleteAsync(id);
+
+            if(authorResult.IsFailure)
+            {
+                TempData["ErrorMessage"] = authorResult.Error.Description;
+                return RedirectToAction("GetAllAuthors");
+            }
+
+            TempData["SuccessMessage"] = "Author deleted successfully!";
             return RedirectToAction("GetAllAuthors");
         }
         public async Task<IActionResult> GetAuthorByFullName(string surname)
         {
             var author = await _authorService.GetByFullNameAsync(surname);
-            return View("GetAuthorById", author);
+            return View("GetAuthorById", author.Value);
         }
     }
 }

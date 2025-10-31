@@ -1,18 +1,23 @@
 ﻿using Application.DTOs.Users;
+using Application.ErrorHandling;
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Exceptions;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Security.Claims;
 
 namespace Infrastructure.Services
 {
+    /// <summary>
+    /// Provides functionality for managing users, including user creation, authentication,
+    /// profile management, and role-based operations.
+    /// </summary>
+    /// <remarks>
+    /// This service integrates with ASP.NET Core Identity for user management and authentication,
+    /// ensuring that business rules are enforced when handling user operations.
+    /// </remarks>
     public class UserService : IUserService
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -28,18 +33,20 @@ namespace Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<GetUserDTO> CreateUserAsync(CreateUserDTO createUserDTO)
+        public async Task<Result<GetUserDTO>> CreateUserAsync(CreateUserDTO createUserDTO)
         {
             if (createUserDTO == null)
             {
-                throw new ArgumentNullException(nameof(createUserDTO), "CreateUserDTO cannot be null");
+                _logger.LogWarning("CreateUserAsync called with null CreateUserDTO.");
+                return Result<GetUserDTO>.Failure(Errors.NullData);
             }
 
             var existingUser = await _userManager.FindByEmailAsync(createUserDTO.Email);
 
             if (existingUser != null)
             {
-                throw new UserExistsException($"User with email {createUserDTO.Email} already exists.");
+                _logger.LogInformation($"User with email {createUserDTO.Email} already exists.");
+                return Result<GetUserDTO>.Failure(Errors.UserExists);
             }
 
             var user = _mapper.Map<ApplicationUser>(createUserDTO);
@@ -50,30 +57,32 @@ namespace Infrastructure.Services
 
             if (!result.Succeeded)
             {
-                throw new InvalidOperationException($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogError($"Failed to create user: {errors}");
+                return Result<GetUserDTO>.Failure(new Error("UserCreationFailed", $"Failed to create user: {errors}"));
             }
 
-            if (result.Succeeded)
-            {
-                var usersCount = _userManager.Users.Count();
-                string role = usersCount == 1 ? "Admin" : "User";
+            var usersCount = _userManager.Users.Count();
+            string role = usersCount == 1 ? "Admin" : "User";
+            await _userManager.AddToRoleAsync(user, role);
 
-                await _userManager.AddToRoleAsync(user, role);
-            }
-
-            _logger.LogInformation($"User created with ID: {user.Id}");
-            return _mapper.Map<GetUserDTO>(user);
+            _logger.LogInformation($"Successfully created user with ID: {user.Id} and assigned role: {role}");
+            return Result<GetUserDTO>.Success(_mapper.Map<GetUserDTO>(user));
         }
-        public async Task<GetUserDTO> UpdateUserAsync(UpdateUserDTO updateUserDTO)
+        public async Task<Result<GetUserDTO>> UpdateUserAsync(UpdateUserDTO updateUserDTO)
         {
-            if(updateUserDTO == null)
-                throw new ArgumentNullException(nameof(updateUserDTO));
+            if (updateUserDTO == null)
+            {
+                _logger.LogWarning("UpdateUserAsync called with null UpdateUserDTO.");
+                return Result<GetUserDTO>.Failure(Errors.NullData);
+            }
 
             var user = await _userManager.FindByIdAsync(updateUserDTO.Id.ToString());
 
             if (user == null)
             {
-                throw new UserNotFoundException($"User with ID {updateUserDTO.Id} not found.");
+                _logger.LogInformation($"User with ID {updateUserDTO.Id} not found.");
+                return Result<GetUserDTO>.Failure(Errors.UserNotFound);
             }
 
             _mapper.Map(updateUserDTO, user);
@@ -82,146 +91,186 @@ namespace Infrastructure.Services
 
             if (!result.Succeeded)
             {
-                throw new InvalidOperationException($"Failed to update user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogError($"Failed to update user {updateUserDTO.Id}: {errors}");
+                return Result<GetUserDTO>.Failure(new Error("UserUpdateFailed", $"Failed to update user: {errors}"));
             }
 
-            _logger.LogInformation($"User with ID: {user.Id} updated successfully.");
-            return _mapper.Map<GetUserDTO>(user);
+            _logger.LogInformation($"Successfully updated user with ID: {user.Id}");
+            return Result<GetUserDTO>.Success(_mapper.Map<GetUserDTO>(user));
         }
-
-        public async Task<bool> DeleteUserAsync(Guid id)
+        public async Task<Result> DeleteUserAsync(Guid id)
         {
             if (id == Guid.Empty)
-                throw new ArgumentNullException(nameof(id), "User ID cannot be empty");
+            {
+                _logger.LogWarning("DeleteUserAsync called with empty user ID.");
+                return Result.Failure(Errors.NullData);
+            }
 
             var user = await _userManager.FindByIdAsync(id.ToString());
 
             if (user == null)
-                throw new UserNotFoundException($"User with ID {id} not found.");
+            {
+                _logger.LogInformation($"User with ID {id} not found.");
+                return Result.Failure(Errors.UserNotFound);
+            }
 
-            if (user.ReservedBooks.Any(r => r.EndsAt > DateTime.Now))
-                throw new InvalidOperationException("User cannot be deleted while having active reservations.");
+            if (user.ReservedBooks != null && user.ReservedBooks.Any(r => r.EndsAt > DateTime.UtcNow))
+            {
+                _logger.LogWarning($"Cannot delete user {id} with active reservations.");
+                return Result.Failure(Errors.UserHasActiveReservations);
+            }
 
             var result = await _userManager.DeleteAsync(user);
 
             if (!result.Succeeded)
-                throw new InvalidOperationException($"Failed to delete user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogError($"Failed to delete user {id}: {errors}");
+                return Result.Failure(new Error("UserDeletionFailed", $"Failed to delete user: {errors}"));
+            }
 
-            _logger.LogInformation($"User with ID: {id} deleted successfully.");
-            return result.Succeeded;
+            _logger.LogInformation($"Successfully deleted user with ID: {id}");
+            return Result.Success();
         }
-
         public async Task<IEnumerable<GetUserDTO>> GetAllUsersAsync()
         {
             var users = await _userManager.Users.ToListAsync();
 
             if (users == null || !users.Any())
             {
-                throw new UserNotFoundException("No users found.");
+                _logger.LogInformation("No users found in the system.");
+                return Enumerable.Empty<GetUserDTO>();
             }
 
+            _logger.LogInformation($"Retrieved {users.Count} users.");
             return _mapper.Map<IEnumerable<GetUserDTO>>(users);
         }
 
-        public async Task<GetUserDTO> GetUserByEmailAsync(string email)
+        public async Task<Result<GetUserDTO>> GetUserByEmailAsync(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
-                throw new ArgumentNullException(nameof(email), "Email cannot be null or empty");
+            {
+                _logger.LogWarning("GetUserByEmailAsync called with null or empty email.");
+                return Result<GetUserDTO>.Failure(Errors.NullData);
+            }
 
             var user = await _userManager.FindByEmailAsync(email);
 
             if (user == null)
-                throw new UserNotFoundException($"User with email {email} not found.");
+            {
+                _logger.LogInformation($"User with email {email} not found.");
+                return Result<GetUserDTO>.Failure(Errors.UserNotFound);
+            }
 
-            return _mapper.Map<GetUserDTO>(user);
+            return Result<GetUserDTO>.Success(_mapper.Map<GetUserDTO>(user));
         }
 
-        public async Task<GetUserDTO> GetUserByIdAsync(Guid id)
+        public async Task<Result<GetUserDTO>> GetUserByIdAsync(Guid id)
         {
             if (id == Guid.Empty)
-                throw new ArgumentNullException(nameof(id), "User ID cannot be empty");
+            {
+                _logger.LogWarning("GetUserByIdAsync called with empty user ID.");
+                return Result<GetUserDTO>.Failure(Errors.NullData);
+            }
 
             var user = await _userManager.FindByIdAsync(id.ToString());
 
             if (user == null)
             {
-                throw new UserNotFoundException($"User with ID {id} not found.");
+                _logger.LogInformation($"User with ID {id} not found.");
+                return Result<GetUserDTO>.Failure(Errors.UserNotFound);
             }
 
-            return _mapper.Map<GetUserDTO>(user);
+            return Result<GetUserDTO>.Success(_mapper.Map<GetUserDTO>(user));
         }
 
-        public async Task<IEnumerable<GetUserDTO>> GetUsersByRoleAsync(string roleName)
+        public async Task<Result<IEnumerable<GetUserDTO>>> GetUsersByRoleAsync(string roleName)
         {
             if (string.IsNullOrWhiteSpace(roleName))
-                throw new ArgumentNullException(nameof(roleName), "Role name cannot be null or empty");
+            {
+                _logger.LogWarning("GetUsersByRoleAsync called with null or empty role name.");
+                return Result<IEnumerable<GetUserDTO>>.Failure(Errors.NullData);
+            }
 
             var usersWithRole = await _userManager.GetUsersInRoleAsync(roleName);
 
             if (usersWithRole == null || !usersWithRole.Any())
             {
-                throw new UserNotFoundException($"No users found for role {roleName}.");
+                _logger.LogInformation($"No users found for role {roleName}.");
+                return Result<IEnumerable<GetUserDTO>>.Failure(Errors.UsersNotFoundForRole);
             }
 
-            return _mapper.Map<IEnumerable<GetUserDTO>>(usersWithRole);
+            _logger.LogInformation($"Retrieved {usersWithRole.Count} users for role {roleName}.");
+            return Result<IEnumerable<GetUserDTO>>.Success(_mapper.Map<IEnumerable<GetUserDTO>>(usersWithRole));
         }
 
-        
-        public async Task<GetUserDTO> AuthenticateAsync(LoginUserDTO loginUserDTO)
+
+        public async Task<Result<GetUserDTO>> AuthenticateAsync(LoginUserDTO loginUserDTO)
         {
             if (loginUserDTO == null)
-                throw new ArgumentNullException(nameof(loginUserDTO), "Login data cannot be null");
+            {
+                _logger.LogWarning("AuthenticateAsync called with null LoginUserDTO.");
+                return Result<GetUserDTO>.Failure(Errors.NullData);
+            }
 
             var applicationUser = await _userManager.FindByNameAsync(loginUserDTO.UserName);
 
             if (applicationUser == null)
             {
-                throw new UserNotFoundException("User not found.");
+                _logger.LogInformation($"User with username {loginUserDTO.UserName} not found.");
+                return Result<GetUserDTO>.Failure(Errors.UserNotFound);
             }
 
-            var user = await _signInManager.PasswordSignInAsync(
+            var signInResult = await _signInManager.PasswordSignInAsync(
                 loginUserDTO.UserName,
                 loginUserDTO.Password,
                 loginUserDTO.RememberMe,
                 lockoutOnFailure: false
             );
 
-            if (!user.Succeeded)
+            if (!signInResult.Succeeded)
             {
-                throw new InvalidOperationException("Invalid login attempt.");
+                _logger.LogWarning($"Invalid login attempt for user {loginUserDTO.UserName}.");
+                return Result<GetUserDTO>.Failure(Errors.InvalidLoginAttempt);
             }
 
-            
-
             _logger.LogInformation($"User {applicationUser.UserName} logged in successfully.");
-            return _mapper.Map<GetUserDTO>(applicationUser);
+            return Result<GetUserDTO>.Success(_mapper.Map<GetUserDTO>(applicationUser));
         }
-        public async Task<bool> Logout()
+        public async Task<Result> Logout()
         {
             await _signInManager.SignOutAsync();
-
             _logger.LogInformation("User logged out successfully.");
-            return true;
+            return Result.Success();
         }
-        public async Task<GetUserDTO> ChangePasswordAsync(ChangePasswordDTO changePasswordDTO)
+        public async Task<Result<GetUserDTO>> ChangePasswordAsync(ChangePasswordDTO changePasswordDTO)
         {
-            
+            if (changePasswordDTO == null)
+            {
+                _logger.LogWarning("ChangePasswordAsync called with null ChangePasswordDTO.");
+                return Result<GetUserDTO>.Failure(Errors.NullData);
+            }
+
             var user = await _userManager.FindByIdAsync(changePasswordDTO.UserId.ToString());
 
             if (user == null)
             {
-                throw new InvalidOperationException($"User with ID {changePasswordDTO.UserId} not found.");
+                _logger.LogInformation($"User with ID {changePasswordDTO.UserId} not found.");
+                return Result<GetUserDTO>.Failure(Errors.UserNotFound);
             }
 
             var result = await _userManager.ChangePasswordAsync(user, changePasswordDTO.OldPassword, changePasswordDTO.NewPassword);
 
             if (!result.Succeeded)
             {
-                throw new InvalidOperationException($"Failed to change password: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogWarning($"Failed to change password for user {changePasswordDTO.UserId}: {errors}");
+                return Result<GetUserDTO>.Failure(new Error("PasswordChangeFailed", $"Failed to change password: {errors}"));
             }
 
-            _logger.LogInformation($"Password changed successfully for user ID: {user.Id}");
-            return _mapper.Map<GetUserDTO>(user);
+            _logger.LogInformation($"Successfully changed password for user ID: {user.Id}");
+            return Result<GetUserDTO>.Success(_mapper.Map<GetUserDTO>(user));
         }
     }
 }

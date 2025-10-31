@@ -1,0 +1,121 @@
+﻿body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    /* Ми прибрали звідси display:flex та інше */
+}
+
+/* 2. Додаємо стилі центрування для <main> */
+/* Цей стиль спрацює ТІЛЬКИ на сторінках, де є цей <style> блок */
+main[role="main"] {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh; /* Можна підібрати висоту, напр. 70vh або 75vh */
+}
+
+/* 3. Всі інші стилі (.login-container, .form-group, .btn-login і т.д.)
+           залишаються без змін. */
+
+.login-container {
+    max-width: 420px;
+    width: 100%;
+    padding: 35px 40px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e0e0e0;
+}
+
+    /* Заголовок H1 */
+    .login-container h1 {
+        text-align: center;
+        color: #2c3e50; /* Темно-синій */
+        margin-bottom: 30px;
+        font-weight: 600;
+        font-size: 2.2em;
+    }
+
+/* Групи полів (для відступів) */
+.form-group {
+    margin-bottom: 20px;
+}
+
+    /* Стилізація <label> */
+    .form-group label,
+    .form-check-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #34495e; /* Темно-сірий */
+        font-size: 0.95em;
+    }
+
+/* Стилізація <input> */
+.form-control {
+    width: 100%; /* Займає всю ширину контейнера */
+    padding: 12px 15px;
+    font-size: 1em;
+    border: 1px solid #ced4da; /* Стандартний колір рамки */
+    border-radius: 8px;
+    box-sizing: border-box; /* Важливо для коректного width: 100% */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+    /* Ефект фокусування на <input> */
+    .form-control:focus {
+        border-color: #007bff; /* Синій колір при фокусі */
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+        outline: none;
+    }
+
+/* Блок "Запам'ятати мене" */
+.form-check {
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-left: 0; /* Скидаємо відступ, який може давати Bootstrap */
+}
+
+/* Чекбокс */
+.form-check-input { /* Використовуйте цей клас для input */
+    margin-right: 10px;
+    width: 1.1em;
+    height: 1.1em;
+    cursor: pointer;
+}
+
+.form-check-label {
+    margin-bottom: 0; /* Прибираємо відступ знизу для label в цьому блоці */
+    font-weight: 500;
+    cursor: pointer;
+    color: #495057;
+}
+
+/* Повідомлення про помилку валідації */
+.text-danger {
+    font-size: 0.875em;
+    margin-top: 6px;
+    display: block;
+}
+
+/* Кнопка "Login" */
+.btn-login {
+    width: 100%; /* На всю ширину */
+    padding: 12px 20px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border-radius: 8px;
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+    /* Ефект при наведенні на кнопку */
+    .btn-login:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+        transform: translateY(-2px); /* Легкий "підйом" */
+    }

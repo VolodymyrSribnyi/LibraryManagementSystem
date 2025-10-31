@@ -18,7 +18,7 @@ namespace Application.DTOs.Books
         public string Publisher { get; set; }
         public int PublishingYear { get; set; }
         public string Description { get; set; }
-        public List<Author> Authors { get; set; } = [];
+        public List<GetAuthorDTO> Authors { get; set; } = [];
         public IFormFile? Picture { get; set; }
     }
 }

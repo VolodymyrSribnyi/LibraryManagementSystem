@@ -1,14 +1,22 @@
 ﻿using Abstractions.Repositories;
 using Application.DTOs.Notitfications;
+using Application.ErrorHandling;
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Enums;
-using Domain.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services
 {
+    /// <summary>
+    /// Provides functionality for managing notifications, including creating various types of notifications
+    /// and retrieving user notifications.
+    /// </summary>
+    /// <remarks>
+    /// This service handles all notification-related operations including book availability alerts,
+    /// reservation confirmations, due date reminders, and system notifications.
+    /// </remarks>
     public class NotificationService : INotificationService
     {
         private readonly INotificationRepository _notificationRepository;
@@ -16,37 +24,45 @@ namespace Infrastructure.Services
         private readonly IBookRepository _bookRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<NotificationService> _logger;
-        public NotificationService(INotificationRepository notificationRepository, IReservingBookRepository reservingBookRepository,IMapper mapper,
-            ILogger<NotificationService> logger,IBookRepository bookRepository)
+
+        public NotificationService(INotificationRepository notificationRepository, IReservingBookRepository reservingBookRepository,
+            IMapper mapper, ILogger<NotificationService> logger, IBookRepository bookRepository)
         {
             _notificationRepository = notificationRepository ?? throw new ArgumentNullException(nameof(notificationRepository));
             _reservationRepository = reservingBookRepository ?? throw new ArgumentNullException(nameof(reservingBookRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _logger = logger ?? throw new ArgumentNullException( nameof(logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
         }
-        public async Task<GetNotificationDTO> CreateNotification(CreateNotificationDTO createNotificationDTO)
+
+        public async Task<Result<GetNotificationDTO>> CreateNotification(CreateNotificationDTO createNotificationDTO)
         {
-            if(createNotificationDTO == null)
-                throw new ArgumentNullException(nameof(createNotificationDTO));
+            if (createNotificationDTO == null)
+            {
+                _logger.LogWarning("CreateNotification called with null CreateNotificationDTO.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
 
             var notificationToCreate = _mapper.Map<Notification>(createNotificationDTO);
-
             var notification = await _notificationRepository.CreateAsync(notificationToCreate);
 
             if (notification == null)
             {
-                throw new InvalidOperationException($"Failed to create notification of type {createNotificationDTO.NotificationType}" );
+                _logger.LogError($"Failed to create notification of type {createNotificationDTO.NotificationType}");
+                return Result<GetNotificationDTO>.Failure(Errors.NotificationCreationFailed);
             }
 
-            _logger.LogInformation("Successfully created notification");
-            return _mapper.Map<GetNotificationDTO>(notification);
+            _logger.LogInformation($"Successfully created notification with ID: {notification.Id}");
+            return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(notification));
         }
 
         public async Task<IEnumerable<GetNotificationDTO>> GetUserNotificationsAsync(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId));
+            {
+                _logger.LogWarning("GetUserNotificationsAsync called with empty userId.");
+                return Enumerable.Empty<GetNotificationDTO>();
+            }
 
             var notifications = await _notificationRepository.GetUserNotificationsAsync(userId);
 
@@ -56,48 +72,68 @@ namespace Infrastructure.Services
                 return Enumerable.Empty<GetNotificationDTO>();
             }
 
+            _logger.LogInformation($"Retrieved {notifications.Count()} notifications for user ID: {userId}");
             return _mapper.Map<IEnumerable<GetNotificationDTO>>(notifications);
         }
 
-        public async Task<bool> MarkNotificationAsReadAsync(Guid notificationId)
+        public async Task<Result> MarkNotificationAsReadAsync(Guid notificationId)
         {
             if (notificationId == Guid.Empty)
-                throw new ArgumentNullException(nameof(notificationId));
+            {
+                _logger.LogWarning("MarkNotificationAsReadAsync called with empty notificationId.");
+                return Result.Failure(Errors.NullData);
+            }
 
             var notification = await _notificationRepository.GetByIdAsync(notificationId);
 
             if (notification == null)
             {
-                throw new NotificationNotFoundException($"Notification with id {notificationId} not found");
+                _logger.LogInformation($"Notification with ID {notificationId} not found.");
+                return Result.Failure(Errors.NotificationNotFound);
             }
 
             var success = await _notificationRepository.MarkNotificationAsReadAsync(notification.Id);
 
             if (!success)
             {
-                throw new InvalidOperationException("Failed to mark notification as read");
+                _logger.LogError($"Failed to mark notification with ID {notificationId} as read");
+                return Result.Failure(Errors.FailedToMarkAsRead);
             }
 
-            return true;
+            _logger.LogInformation($"Successfully marked notification with ID {notificationId} as read");
+            return Result.Success();
         }
 
-        public async Task<GetNotificationDTO> SendBookAvailableNotificationAsync(Guid userId, Guid bookId)
+        public async Task<Result<GetNotificationDTO>> SendBookAvailableNotificationAsync(Guid userId, Guid bookId)
         {
-            if (userId == Guid.Empty || bookId == Guid.Empty)
-                throw new ArgumentNullException("userId or bookId is empty");
+            if (userId == Guid.Empty)
+            {
+                _logger.LogWarning("SendBookAvailableNotificationAsync called with empty userId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
 
-            var book = await  _bookRepository.GetByIdAsync(bookId);
+            if (bookId == Guid.Empty)
+            {
+                _logger.LogWarning("SendBookAvailableNotificationAsync called with empty bookId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
+
+            var book = await _bookRepository.GetByIdAsync(bookId);
+
             if (book == null)
-                throw new BookNotFoundException(bookId);
+            {
+                _logger.LogInformation($"Book with ID {bookId} not found.");
+                return Result<GetNotificationDTO>.Failure(Errors.BookNotFound);
+            }
 
             var notification = new Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 BookId = bookId,
-                Message = $"The book with title {book.Title} you requested is now available.",
+                Message = $"The book '{book.Title}' you requested is now available.",
                 NotificationType = NotificationType.BookAvailable,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTime.UtcNow,
                 IsRead = false
             };
 
@@ -105,30 +141,48 @@ namespace Infrastructure.Services
 
             if (createdNotification == null)
             {
-                throw new InvalidOperationException("Failed to create book available notification");
+                _logger.LogError($"Failed to create book available notification for user {userId} and book {bookId}");
+                return Result<GetNotificationDTO>.Failure(Errors.NotificationCreationFailed);
             }
 
-            return _mapper.Map<GetNotificationDTO>(createdNotification);
+            _logger.LogInformation($"Successfully sent book available notification for book '{book.Title}' to user {userId}");
+            return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(createdNotification));
         }
 
-        public async Task<GetNotificationDTO> SendReservationConfirmationAsync(Guid reservationId, Guid userId, Guid bookId)
+        public async Task<Result<GetNotificationDTO>> SendReservationConfirmationAsync(Guid reservationId, Guid userId, Guid bookId)
         {
-            if (reservationId == Guid.Empty || userId == Guid.Empty || bookId == Guid.Empty)
-                throw new ArgumentNullException("reservationId, userId or bookId is empty");
+            if (reservationId == Guid.Empty)
+            {
+                _logger.LogWarning("SendReservationConfirmationAsync called with empty reservationId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
+
+            if (userId == Guid.Empty)
+            {
+                _logger.LogWarning("SendReservationConfirmationAsync called with empty userId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
+
+            if (bookId == Guid.Empty)
+            {
+                _logger.LogWarning("SendReservationConfirmationAsync called with empty bookId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
 
             var reservation = await _reservationRepository.GetByIdAsync(reservationId);
 
             if (reservation == null)
             {
-                throw new Exception("Reservation not found");
+                _logger.LogInformation($"Reservation with ID {reservationId} not found.");
+                return Result<GetNotificationDTO>.Failure(Errors.ReservationNotFound);
             }
 
             var notification = new Notification
             {
-                Id = reservationId,
+                Id = Guid.NewGuid(),
                 UserId = userId,
                 BookId = bookId,
-                Message = $"Your reservation of {reservation.Book.Title} has been confirmed.",
+                Message = $"Your reservation of '{reservation.Book.Title}' has been confirmed.",
                 NotificationType = NotificationType.ReservationConfirmation,
                 CreatedAt = DateTime.UtcNow,
                 IsRead = false
@@ -138,22 +192,42 @@ namespace Infrastructure.Services
 
             if (createdNotification == null)
             {
-                throw new InvalidOperationException("Failed to create reservation confirmation notification");
+                _logger.LogError($"Failed to create reservation confirmation notification for reservation {reservationId}");
+                return Result<GetNotificationDTO>.Failure(Errors.NotificationCreationFailed);
             }
 
-            return _mapper.Map<GetNotificationDTO>(createdNotification);
+            _logger.LogInformation($"Successfully sent reservation confirmation for reservation {reservationId} to user {userId}");
+            return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(createdNotification));
         }
-        public async Task<GetNotificationDTO> SendBookDueReminder(Guid userId, Guid bookId)
+
+        public async Task<Result<GetNotificationDTO>> SendBookDueReminder(Guid userId, Guid bookId)
         {
-            if (userId == Guid.Empty || bookId == Guid.Empty)
-                throw new ArgumentNullException("userId or bookId is empty");
+            if (userId == Guid.Empty)
+            {
+                _logger.LogWarning("SendBookDueReminder called with empty userId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
+
+            if (bookId == Guid.Empty)
+            {
+                _logger.LogWarning("SendBookDueReminder called with empty bookId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
+
+            var book = await _bookRepository.GetByIdAsync(bookId);
+
+            if (book == null)
+            {
+                _logger.LogInformation($"Book with ID {bookId} not found.");
+                return Result<GetNotificationDTO>.Failure(Errors.BookNotFound);
+            }
 
             var notification = new Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 BookId = bookId,
-                Message = "This is a reminder that your borrowed book is due soon.",
+                Message = $"This is a reminder that your borrowed book '{book.Title}' is due soon.",
                 NotificationType = NotificationType.BookDueReminder,
                 CreatedAt = DateTime.UtcNow,
                 IsRead = false
@@ -163,22 +237,42 @@ namespace Infrastructure.Services
 
             if (createdNotification == null)
             {
-                throw new InvalidOperationException("Failed to create book due reminder notification");
+                _logger.LogError($"Failed to create book due reminder notification for user {userId} and book {bookId}");
+                return Result<GetNotificationDTO>.Failure(Errors.NotificationCreationFailed);
             }
 
-            return _mapper.Map<GetNotificationDTO>(createdNotification);
+            _logger.LogInformation($"Successfully sent book due reminder for book {bookId} to user {userId}");
+            return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(createdNotification));
         }
-        public async Task<GetNotificationDTO> SendNewBookArrival(Guid userId, Guid bookId)
+
+        public async Task<Result<GetNotificationDTO>> SendNewBookArrival(Guid userId, Guid bookId)
         {
-            if (userId == Guid.Empty || bookId == Guid.Empty)
-                throw new ArgumentNullException("userId or bookId is empty");
+            if (userId == Guid.Empty)
+            {
+                _logger.LogWarning("SendNewBookArrival called with empty userId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
+
+            if (bookId == Guid.Empty)
+            {
+                _logger.LogWarning("SendNewBookArrival called with empty bookId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
+
+            var book = await _bookRepository.GetByIdAsync(bookId);
+
+            if (book == null)
+            {
+                _logger.LogInformation($"Book with ID {bookId} not found.");
+                return Result<GetNotificationDTO>.Failure(Errors.BookNotFound);
+            }
 
             var notification = new Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 BookId = bookId,
-                Message = "A new book has arrived that you might be interested in.",
+                Message = $"A new book '{book.Title}' has arrived that you might be interested in.",
                 NotificationType = NotificationType.NewBookArrival,
                 CreatedAt = DateTime.UtcNow,
                 IsRead = false
@@ -188,15 +282,21 @@ namespace Infrastructure.Services
 
             if (createdNotification == null)
             {
-                throw new InvalidOperationException("Failed to create new book arrival notification");
+                _logger.LogError($"Failed to create new book arrival notification for user {userId} and book {bookId}");
+                return Result<GetNotificationDTO>.Failure(Errors.NotificationCreationFailed);
             }
 
-            return _mapper.Map<GetNotificationDTO>(createdNotification);
+            _logger.LogInformation($"Successfully sent new book arrival notification for book {bookId} to user {userId}");
+            return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(createdNotification));
         }
-        public async Task<GetNotificationDTO> SendLibraryCardExpiry(Guid userId)
+
+        public async Task<Result<GetNotificationDTO>> SendLibraryCardExpiry(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId));
+            {
+                _logger.LogWarning("SendLibraryCardExpiry called with empty userId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
 
             var notification = new Notification
             {
@@ -212,15 +312,21 @@ namespace Infrastructure.Services
 
             if (createdNotification == null)
             {
-                throw new InvalidOperationException("Failed to create library card expiry notification");
+                _logger.LogError($"Failed to create library card expiry notification for user {userId}");
+                return Result<GetNotificationDTO>.Failure(Errors.NotificationCreationFailed);
             }
 
-            return _mapper.Map<GetNotificationDTO>(createdNotification);
+            _logger.LogInformation($"Successfully sent library card expiry notification to user {userId}");
+            return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(createdNotification));
         }
-        public async Task<GetNotificationDTO> SendGeneralUpdate(Guid userId)
+
+        public async Task<Result<GetNotificationDTO>> SendGeneralUpdate(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId));
+            {
+                _logger.LogWarning("SendGeneralUpdate called with empty userId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
 
             var notification = new Notification
             {
@@ -236,15 +342,21 @@ namespace Infrastructure.Services
 
             if (createdNotification == null)
             {
-                throw new InvalidOperationException("Failed to create general update notification");
+                _logger.LogError($"Failed to create general update notification for user {userId}");
+                return Result<GetNotificationDTO>.Failure(Errors.NotificationCreationFailed);
             }
 
-            return _mapper.Map<GetNotificationDTO>(createdNotification);
+            _logger.LogInformation($"Successfully sent general update notification to user {userId}");
+            return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(createdNotification));
         }
-        public async Task<GetNotificationDTO> SendSystemAlert(Guid userId)
+
+        public async Task<Result<GetNotificationDTO>> SendSystemAlert(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId));
+            {
+                _logger.LogWarning("SendSystemAlert called with empty userId.");
+                return Result<GetNotificationDTO>.Failure(Errors.NullData);
+            }
 
             var notification = new Notification
             {
@@ -260,10 +372,12 @@ namespace Infrastructure.Services
 
             if (createdNotification == null)
             {
-                throw new InvalidOperationException("Failed to create system alert notification");
+                _logger.LogError($"Failed to create system alert notification for user {userId}");
+                return Result<GetNotificationDTO>.Failure(Errors.NotificationCreationFailed);
             }
 
-            return _mapper.Map<GetNotificationDTO>(createdNotification);
+            _logger.LogInformation($"Successfully sent system alert notification to user {userId}");
+            return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(createdNotification));
         }
     }
 }

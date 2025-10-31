@@ -28,7 +28,13 @@ namespace Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(CreateUserDTO createUserDTO)
         {
-            await _userService.CreateUserAsync(createUserDTO);
+            var userResult = await _userService.CreateUserAsync(createUserDTO);
+
+            if (userResult.IsFailure)
+            {
+                TempData["ErrorMesage"] = userResult.Error.Description;
+                return View(createUserDTO);
+            }
 
             return RedirectToAction("GetAllUsers", "User");
         }
@@ -40,25 +46,25 @@ namespace Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(LoginUserDTO loginUserDTO)
         {
-            try
+            var user = await _userService.AuthenticateAsync(loginUserDTO);
+            if (user.IsSuccess)
             {
-                var user = await _userService.AuthenticateAsync(loginUserDTO);
-                if (user != null)
-                {
-                    return View("AccountDashboard", user);
-                }
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                return View("AccountDashboard", user.Value);
             }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, ex.Message);
-            }
+
+            TempData["ErrorMessage"] = user.Error.Description;
             return View(loginUserDTO);
         }
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
-            await _userService.Logout();
+            var result = await _userService.Logout();
+
+            if (result.IsFailure)
+            {
+                TempData["ErrorMesage"] = result.Error.Description;
+                return RedirectToAction("AccountDashboard", "User");
+            }
 
             return RedirectToAction("Index", "Home");
         }
@@ -71,19 +77,27 @@ namespace Web.Controllers
         }
         [HttpPost]
         [Authorize]
-        public async Task<GetUserDTO> ChangePassword(ChangePasswordDTO changePasswordDTO)
+        public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDTO)
         {
             var id = _userManager.GetUserId(HttpContext.User);
             changePasswordDTO.UserId = Guid.Parse(id);
             var user = await _userService.ChangePasswordAsync(changePasswordDTO);
 
-            return user;
+            if (user.IsFailure)
+            {
+                TempData["ErrorMesage"] = user.Error.Description;
+                return RedirectToAction("AccountDashboard");
+            }
+
+            TempData["SuccessMessage"] = "Password changed successfully.";
+            return RedirectToAction("AccountDashboard");
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> GetAllUsersAsync()
         {
             var users = await _userService.GetAllUsersAsync();
+
             return View(users);
         }
         [HttpGet]
@@ -91,6 +105,6 @@ namespace Web.Controllers
         {
             return View();
         }
-        
+
     }
 }

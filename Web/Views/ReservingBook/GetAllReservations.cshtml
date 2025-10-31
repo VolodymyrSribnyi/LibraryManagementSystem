@@ -1,5 +1,16 @@
 ﻿@model IEnumerable<Application.DTOs.Reservations.GetReservationDTO>
-
+@if (TempData["SuccessMessage"] != null)
+{
+	<div class="alert alert-success">
+		@TempData["SuccessMessage"]
+	</div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+	<div class="alert alert-danger">
+		@TempData["ErrorMessage"]
+	</div>
+}
 <h1>Reservations</h1>
 
 <table>
@@ -13,6 +24,9 @@
 			</th>
 			<th>
 				BookId
+			</th>
+			<th>
+				Book Title
 			</th>
 			<th>
 				ReservedAt
@@ -37,6 +51,9 @@
 				</th>
 				<th>
 					@reservation.BookId
+				</th>
+				<th>
+					@reservation.BookTitle
 				</th>
 				<th>
 					@reservation.ReservedAt
