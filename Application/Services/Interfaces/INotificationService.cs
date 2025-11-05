@@ -25,6 +25,12 @@ namespace Application.Services.Interfaces
         /// <param name="createNotificationDTO">The data transfer object containing the information for the new notification.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="GetNotificationDTO"/> representing the created notification.</returns>
         Task<Result<GetNotificationDTO>> CreateNotification(CreateNotificationDTO createNotificationDTO);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="notificationId"></param>
+        /// <returns></returns>
+        Task<Result> DeleteNotificationAsync(Guid notificationId);
 
         /// <summary>
         /// Sends a notification to a user indicating that a requested book is now available.

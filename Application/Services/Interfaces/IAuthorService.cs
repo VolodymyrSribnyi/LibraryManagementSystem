@@ -51,7 +51,7 @@ namespace Application.Services.Interfaces
         /// </summary>
         /// <param name="fullName">The full name of the author to retrieve.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="GetAuthorDTO"/> representing the author if found; otherwise, <see langword="null"/>.</returns>
-        Task<Result<GetAuthorDTO>> GetByFullNameAsync(string fullName);
+        Task<Result<GetAuthorDTO>> GetBySurnameAsync(string fullName);
 
         /// <summary>
         /// Retrieves all authors in the system.

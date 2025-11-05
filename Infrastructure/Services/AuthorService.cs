@@ -27,6 +27,7 @@ namespace Infrastructure.Services
                 _logger.LogWarning($"{Errors.NullData.Code} AddAsync called with null CreateAuthorDTO");
                 return Result<GetAuthorDTO>.Failure(Errors.NullData);
             }
+
             if (string.IsNullOrWhiteSpace(createAuthorDTO.FirstName) ||
                 string.IsNullOrWhiteSpace(createAuthorDTO.Surname) ||
                 string.IsNullOrEmpty(createAuthorDTO.Description) ||
@@ -143,11 +144,11 @@ namespace Infrastructure.Services
             return Result<bool>.Success(true);
         }
 
-        public async Task<Result<GetAuthorDTO>> GetByFullNameAsync(string surname)
+        public async Task<Result<GetAuthorDTO>> GetBySurnameAsync(string surname)
         {
             if (string.IsNullOrWhiteSpace(surname))
             {
-                _logger.LogWarning("GetByFullNameAsync called with null or empty surname");
+                _logger.LogWarning("GetBySurnameAsync called with null or empty surname");
                 return Result<GetAuthorDTO>.Failure(Errors.NullData);
             }
 

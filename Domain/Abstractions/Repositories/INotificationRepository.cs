@@ -42,5 +42,6 @@ namespace Abstractions.Repositories
         /// <param name="userId">The unique identifier of the user whose notifications to retrieve.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of <see cref="Notification"/> objects for the specified user.</returns>
         Task<IEnumerable<Notification>> GetUserNotificationsAsync(Guid userId);
+        Task<bool> DeleteAsync(Guid notificationId);
     }
 }

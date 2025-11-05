@@ -33,5 +33,6 @@ namespace Application.ErrorHandling
         public static readonly Error UsersNotFoundForRole = new Error("USERS_NOT_FOUND_FOR_ROLE", "No users found for the specified role.");
         public static readonly Error InvalidLoginAttempt = new Error("INVALID_LOGIN_ATTEMPT", "Invalid username or password.");
         public static readonly Error UserHasActiveReservations = new Error("USER_HAS_ACTIVE_RESERVATIONS", "The user has active reservations and cannot be deleted.");
+        public static readonly Error NotificationDeletionFailed = new Error("NOTIFICATION_DELETION_FAILED", "Failed to delete the notification request.");
     }
 }

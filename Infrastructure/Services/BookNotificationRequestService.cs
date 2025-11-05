@@ -51,7 +51,7 @@ namespace Infrastructure.Services
 
             var book = await _bookService.GetByIdAsync(bookId);
 
-            if (book == null)
+            if (book.IsFailure)
             {
                 _logger.LogInformation($"Book with ID {bookId} not found.");
                 return Result<BookNotificationRequestDTO>.Failure(Errors.BookNotFound);
@@ -93,7 +93,7 @@ namespace Infrastructure.Services
             }
             var book = await _bookService.GetByIdAsync(bookId);
 
-            if (book == null)
+            if (book.IsFailure)
             {
                 _logger.LogInformation($"Book with ID {bookId} not found.");
                 return Result<IEnumerable<BookNotificationRequestDTO>>.Failure(Errors.BookNotFound);

@@ -49,11 +49,19 @@ namespace Infrastructure.Repositories
             return notification;
         }
 
-        public Task<IEnumerable<Notification>> GetUserNotificationsAsync(Guid userId)
+        public async Task<IEnumerable<Notification>> GetUserNotificationsAsync(Guid userId)
         {
             var notifications = _libraryContext.Notifications.Where(n => n.UserId == userId).AsEnumerable();
 
-            return Task.FromResult(notifications);
+            return notifications;
+        }
+        public async Task<bool> DeleteAsync(Guid notificationId)
+        {
+            var notification = _libraryContext.Notifications.FirstOrDefault(n => n.Id == notificationId);
+
+            _libraryContext.Notifications.Remove(notification);
+
+            return true;
         }
 
         public async Task<bool> MarkNotificationAsReadAsync(Guid notificationId)
