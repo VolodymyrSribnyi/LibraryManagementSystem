@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Web.Filters;
 
 namespace Web.Controllers
 {
     public class AdminController : Controller
     {
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> AdminDashboard()
         {

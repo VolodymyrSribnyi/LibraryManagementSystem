@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Web.Filters;
 
 namespace Web.Controllers
 {
@@ -18,7 +19,7 @@ namespace Web.Controllers
             _libraryCardService = libraryCardService;
             _userManager = userManager;
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> CreateLibraryCard()
         {
@@ -27,7 +28,7 @@ namespace Web.Controllers
 
             return View(user);
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> CreateLibraryCard(Guid userId)
         {
@@ -35,7 +36,7 @@ namespace Web.Controllers
 
             return RedirectToAction("GetAllLibraryCards");
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public IActionResult GetAllLibraryCards()
         {

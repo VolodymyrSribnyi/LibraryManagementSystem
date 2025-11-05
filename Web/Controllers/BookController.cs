@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Web.Filters;
 
 namespace Web.Controllers
 {
@@ -23,7 +24,7 @@ namespace Web.Controllers
             _bookService = bookService;
             _authorService = authorService;
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> AddBook()
         {
@@ -37,7 +38,7 @@ namespace Web.Controllers
 
             return View(new CreateBookDTO { Authors = authorsResult.Value.ToList() });
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> AddBook(CreateBookDTO bookDTO)
         {
@@ -51,7 +52,7 @@ namespace Web.Controllers
 
             return RedirectToAction("GetAllBooks");
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteBook(Guid id)
         {
             var result = await _bookService.DeleteAsync(id);
@@ -64,7 +65,7 @@ namespace Web.Controllers
 
             return RedirectToAction("GetAllBooks");
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> UpdateBook(Guid bookId)
         {
@@ -99,7 +100,7 @@ namespace Web.Controllers
             };
             return View(updateBookDTO);
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> UpdateBook(UpdateBookDTO updateBookDTO)
         {

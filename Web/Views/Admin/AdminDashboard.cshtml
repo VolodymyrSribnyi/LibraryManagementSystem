@@ -1,5 +1,8 @@
 ﻿<h1>Admin Dashboard</h1>
-
+@if (TempData["AlertMessage"] != null)
+{
+	<div class="alert alert-danger">@TempData["AlertMessage"]</div>
+}
 @if(User.Identity.IsAuthenticated)
 {
 	<p>Welcome, @User.Identity.Name!</p>

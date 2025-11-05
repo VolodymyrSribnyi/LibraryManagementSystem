@@ -4,6 +4,7 @@ using Domain.Entities;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Web.Filters;
 
 namespace Web.Controllers
 {
@@ -22,6 +23,7 @@ namespace Web.Controllers
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _bookService = bookService ?? throw new ArgumentNullException(nameof(bookService));
         }
+        [CustomAuthorize]
         public async Task<IActionResult> SubscribeToBookAvailability(Guid bookId)
         {
             var userId = Guid.Parse(_userManager.GetUserId(HttpContext.User));
@@ -37,6 +39,7 @@ namespace Web.Controllers
             var subscriptions = await _bookRequestService.GetUserSubscriptionsAsync(userId);
             return View("MySubscriptions", subscriptions.Value);
         }
+        [CustomAuthorize]
         public async Task<IActionResult> UnsubscribeFromBook(Guid requestId)
         {
             var result = await _bookRequestService.RemoveSubscriptionAsync(requestId);
@@ -49,6 +52,7 @@ namespace Web.Controllers
             }
             return RedirectToAction("AccountDashboard", "User");
         }
+        [CustomAuthorize]
         public async Task<IActionResult> MySubscriptions()
         {
             var userId = Guid.Parse(_userManager.GetUserId(HttpContext.User));
@@ -62,6 +66,7 @@ namespace Web.Controllers
             }
             return View(subscriptions.Value);
         }
+        [CustomAuthorize]
         public async Task<IActionResult> MyNotifications()
         {
             var userId = Guid.Parse(_userManager.GetUserId(HttpContext.User));

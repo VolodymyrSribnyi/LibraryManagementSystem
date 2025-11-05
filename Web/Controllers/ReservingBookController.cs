@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Web.Filters;
 
 namespace Web.Controllers
 {
@@ -21,7 +22,7 @@ namespace Web.Controllers
             _bookService = bookService;
         }
         [HttpGet]
-        [Authorize]
+        [CustomAuthorize]
         public async Task<IActionResult> ReserveBook(Guid bookId)
         {
             var book = await _bookService.GetByIdAsync(bookId);
@@ -35,14 +36,14 @@ namespace Web.Controllers
             return View(new CreateReservationDTO { BookId = bookId,UserId = Guid.Parse(_userManager.GetUserId(HttpContext.User)),Book = book.Value });
         }
         [HttpPost]
-        [Authorize]
+        [CustomAuthorize]
         public async Task<IActionResult> ReserveBook(CreateReservationDTO createReservationDTO)
         {
             var reservation = await _reservingBookService.ReserveBookAsync(createReservationDTO);
             
             return RedirectToAction("GetUserActiveReservations");
         }
-        [Authorize]
+        [CustomAuthorize]
         public async Task<IActionResult> ReturnBook(Guid Id)
         {
             var reservation = await _reservingBookService.ReturnBookAsync(Id);
@@ -50,7 +51,7 @@ namespace Web.Controllers
             return RedirectToAction("GetUserActiveReservations");
         }
         [HttpGet]
-        [Authorize]
+        [CustomAuthorize]
         public async Task<IActionResult> Details(Guid Id)
         {
             var reservation = await _reservingBookService.GetByIdAsync(Id);
@@ -64,7 +65,7 @@ namespace Web.Controllers
             return View(reservation.Value);
         }
         [HttpGet]
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         public async Task<IActionResult> GetAllReservations()
         {
             var reservations = await _reservingBookService.GetAllAsync();
@@ -72,7 +73,7 @@ namespace Web.Controllers
             return View(reservations);
         }
         [HttpGet]
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         public async Task<IActionResult> GetAllActiveReservations()
         {
             var reservations = await _reservingBookService.GetActiveReservationsAsync();
@@ -80,7 +81,7 @@ namespace Web.Controllers
             return View(reservations);
         }
         [HttpGet]
-        [Authorize]
+        [CustomAuthorize]
         public async Task<IActionResult> GetUserReturnedReservations()
         {
             Guid userId = Guid.Parse(_userManager.GetUserId(HttpContext.User));
@@ -88,7 +89,7 @@ namespace Web.Controllers
 
             return View(reservations);
         }
-        [Authorize]
+        [CustomAuthorize]
         public async Task<IActionResult> GetUserActiveReservations()
         {
             Guid userId = Guid.Parse(_userManager.GetUserId(HttpContext.User));

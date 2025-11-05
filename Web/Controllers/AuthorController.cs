@@ -2,6 +2,7 @@
 using Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Web.Filters;
 
 namespace Web.Controllers
 {
@@ -19,13 +20,13 @@ namespace Web.Controllers
 
             return View("GetAllAuthors", authors.Value);
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public IActionResult AddAuthor()
         {
             return View();
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> AddAuthor(CreateAuthorDTO createAuthorDTO)
         {
@@ -56,7 +57,7 @@ namespace Web.Controllers
 
             return View("GetAuthorById", author.Value);
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> UpdateAuthor(Guid id)
         {
@@ -70,7 +71,7 @@ namespace Web.Controllers
 
             return View(_authorService.MapToUpdateAuthorDTO(author.Value));
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> UpdateAuthor(UpdateAuthorDTO updateAuthorDTO)
         {
@@ -85,7 +86,7 @@ namespace Web.Controllers
             TempData["SuccessMessage"] = "Author updated successfully!";
             return RedirectToAction("GetAllAuthors");
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteAuthor(Guid id)
         {
             var authorResult = await _authorService.DeleteAsync(id);
@@ -101,7 +102,7 @@ namespace Web.Controllers
         }
         public async Task<IActionResult> GetAuthorByFullName(string surname)
         {
-            var author = await _authorService.GetByFullNameAsync(surname);
+            var author = await _authorService.GetBySurnameAsync(surname);
             return View("GetAuthorById", author.Value);
         }
     }

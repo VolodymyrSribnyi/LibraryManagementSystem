@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Web.Filters;
 
 namespace Web.Controllers
 {
@@ -56,6 +57,7 @@ namespace Web.Controllers
             return View(loginUserDTO);
         }
         [HttpPost]
+        [CustomAuthorize]
         public async Task<IActionResult> Logout()
         {
             var result = await _userService.Logout();
@@ -70,13 +72,13 @@ namespace Web.Controllers
         }
 
         [HttpGet]
-        [Authorize]
+        [CustomAuthorize]
         public IActionResult ChangePassword()
         {
             return View();
         }
         [HttpPost]
-        [Authorize]
+        [CustomAuthorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordDTO changePasswordDTO)
         {
             var id = _userManager.GetUserId(HttpContext.User);
@@ -92,7 +94,7 @@ namespace Web.Controllers
             TempData["SuccessMessage"] = "Password changed successfully.";
             return RedirectToAction("AccountDashboard");
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> GetAllUsersAsync()
         {
@@ -101,6 +103,7 @@ namespace Web.Controllers
             return View(users);
         }
         [HttpGet]
+        [CustomAuthorize]
         public async Task<IActionResult> AccountDashboard()
         {
             return View();
