@@ -1,22 +1,40 @@
-﻿<h1>Admin Dashboard</h1>
+﻿<head>
+	<link rel="stylesheet" href="~/css/AccountDashboard.css" />
+</head>
 @if (TempData["AlertMessage"] != null)
 {
 	<div class="alert alert-danger">@TempData["AlertMessage"]</div>
 }
-@if(User.Identity.IsAuthenticated)
+@if (User.Identity.IsAuthenticated)
 {
-	<p>Welcome, @User.Identity.Name!</p>
-	<a asp-controller="Book" asp-action="AddBook">Add New Book</a>
-	<a asp-controller="Book" asp-action="ManageBooks">Manage Books</a>
-	<a asp-controller="User" asp-action="ManageUsers">Manage Users</a>
-	<a asp-controller="Reservation" asp-action="ViewAllReservations">View All Reservations</a>
-	<a asp-controller="Notification" asp-action="ManageNotifications">Manage Notifications</a>
-	<form method="post" asp-controller="User" asp-action="Logout">
-		<input type="submit" value="Logout" />
-	</form>
+	<div class="container">
+		<div class="dashboard-card">
+			<h1>Admin Dashboard</h1>
+			<div class="authenticated-view">
+				<p>Welcome, @User.Identity.Name!</p>
+
+				<div class="nav-links">
+					<a asp-controller="Book" asp-action="AddBook">Add New Book</a>
+					<a asp-controller="Author" asp-action="AddAuthor">Add New Author</a>
+					<a asp-controller="Book" asp-action="ManageBooks">Manage Books</a>
+					<a asp-controller="User" asp-action="GetAllUsers">Manage Users</a>
+					<a asp-controller="Reservation" asp-action="ViewAllReservations">View All Reservations</a>
+				</div>
+				<div class="auth-actions">
+					<form method="post" asp-controller="User" asp-action="Logout">
+						<input type="submit" value="Logout" />
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
 }
 else
 {
-	<a asp-controller="User" asp-action="Login">Login</a>
-	<a asp-controller="User" asp-action="Register">Register</a>
+	<div class="unauthenticated-view">
+		<div class="auth-actions">
+			<a asp-controller="User" asp-action="Login">Login</a>
+			<a asp-controller="User" asp-action="Register">Register</a>
+		</div>
+	</div>
 }

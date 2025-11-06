@@ -1,4 +1,7 @@
 ﻿@model IEnumerable<Application.DTOs.Reservations.GetReservationDTO>
+<head>
+	<link rel="stylesheet" href="~/css/MyReservations.css" />
+</head>
 @if (TempData["SuccessMessage"] != null)
 {
 	<div class="alert alert-success">
@@ -15,60 +18,61 @@
 {
 	<div class="alert alert-danger">@TempData["AlertMessage"]</div>
 }
-<h1>Reservations</h1>
 
-<table>
-	<thead>
-		<tr>
-			<th>
-				Id
-			</th>
-			<th>
-				UserId
-			</th>
-			<th>
-				BookId
-			</th>
-			<th>
-				Book Title
-			</th>
-			<th>
-				ReservedAt
-			</th>
-			<th>
-				EndsAt
-			</th>
-			<th>
-				Is Returned
-			</th>
-		</tr>
-	</thead>
-	<tbody>
-		@foreach(var reservation in Model)
-		{
-			<tr>
-				<th>
-					@reservation.Id
-				</th>
-				<th>
-					@reservation.UserId
-				</th>
-				<th>
-					@reservation.BookId
-				</th>
-				<th>
-					@reservation.BookTitle
-				</th>
-				<th>
-					@reservation.ReservedAt
-				</th>
-				<th>
-					@reservation.EndsAt
-				</th>
-				<th>
-					@reservation.IsReturned
-				</th>
-			</tr>
-		}
-	</tbody>
-</table>
+<div class="table-container">
+	<h1>My Reservations</h1>
+
+	@if (Model.Any())
+	{
+		<table>
+			<thead>
+				<tr>
+					<th>User ID</th>
+					<th>Book Title</th>
+					<th>Reserved At</th>
+					<th>Ends At</th>
+					<th>Status</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var reservation in Model)
+				{
+					<tr>
+						<td data-label="User ID">
+							@reservation.UserId
+						</td>
+						<td data-label="Book Title">
+							@reservation.BookTitle
+						</td>
+						<td data-label="Reserved">
+							@reservation.ReservedAt.ToString("MMM dd, yyyy")
+						</td>
+						<td data-label="Due Date">
+							@reservation.EndsAt.ToString("MMM dd, yyyy")
+						</td>
+						<td data-label="Status">
+							@if (reservation.IsReturned)
+							{
+								<span class="badge badge-success">Returned</span>
+							}
+							else if (reservation.EndsAt < DateTime.Now)
+							{
+								<span class="badge badge-danger">Overdue</span>
+							}
+							else
+							{
+								<span class="badge badge-primary">Active</span>
+							}
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+	else
+	{
+		<div class="empty-state">
+			<h3>No reservations found</h3>
+		</div>
+	}
+</div>

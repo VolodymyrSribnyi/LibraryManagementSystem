@@ -1,56 +1,59 @@
 ﻿@model IEnumerable<Application.DTOs.Notitfications.GetNotificationDTO>
+<head>
+	<link rel="stylesheet" href="~/css/MyNotifications.css" />
+</head>
 @if (TempData["SuccessMessage"] != null)
 {
-	<div class="alert alert-success">
-		@TempData["SuccessMessage"]
-	</div>
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
 }
 @if (TempData["ErrorMessage"] != null)
 {
-	<div class="alert alert-danger">
-		@TempData["ErrorMessage"]
-	</div>
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
 }
 @if (TempData["AlertMessage"] != null)
 {
-	<div class="alert alert-danger">@TempData["AlertMessage"]</div>
+    <div class="alert alert-danger">@TempData["AlertMessage"]</div>
 }
-<h1>My Notifications</h1>
-@if (Model.Any())
-{
-	<table>
-		<thead>
-			<tr>
-				<th>
-					NotificationType
-				</th>
-				<th>
-					Message
-				</th>
-				<th>
-					CreatedAt
-				</th>
-			</tr>
-		</thead>
-		<tbody>
-			@foreach (var notification in Model)
-			{
-				<tr>
-					<td>
-						@notification.NotificationType.ToString()
-					</td>
-					<td>
-						@notification.Message
-					</td>
-					<td>
-						@notification.CreatedAt
-					</td>
-				</tr>
-			}
-		</tbody>
-	</table>
-}
-else
-{
-	<h3>No notifications found</h3>
-}
+
+<div class="table-container">
+    <h1>My Notifications</h1>
+
+    @if (Model.Any())
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Notification Type</th>
+                    <th>Message</th>
+                    <th>Sent At</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var notification in Model)
+                {
+                    <tr>
+                        <td data-label="Type">
+                            @notification.NotificationType.ToString()
+                        </td>
+                        <td data-label="Message">
+                            @notification.Message
+                        </td>
+                        <td data-label="Created">
+                            @notification.CreatedAt.ToString("MMM dd, yyyy h:mm tt")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="empty-state">
+            <h3>No notifications found</h3>
+        </div>
+    }
+</div>

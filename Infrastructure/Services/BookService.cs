@@ -149,7 +149,6 @@ namespace Infrastructure.Services
                 return Result.Failure(Errors.BookNotFound);
             }
 
-            bookToDelete.IsDeleted = true;
             var result = await _bookRepository.DeleteAsync(bookToDelete.Id);
 
             if (!result)
@@ -248,8 +247,6 @@ namespace Infrastructure.Services
 
             return Result<IEnumerable<GetBookDTO>>.Success(_mapper.Map<IEnumerable<GetBookDTO>>(books));
         }
-
-
 
         public async Task<Result<GetBookDTO>> GetByTitleAsync(string title)
         {

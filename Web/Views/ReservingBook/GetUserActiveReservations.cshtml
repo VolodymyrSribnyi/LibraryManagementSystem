@@ -1,4 +1,7 @@
 ﻿@model IEnumerable<Application.DTOs.Reservations.GetReservationDTO>
+<head>
+	<link rel="stylesheet" href="~/css/MyReservations.css" />
+</head>
 @if (TempData["SuccessMessage"] != null)
 {
 	<div class="alert alert-success">
@@ -15,49 +18,70 @@
 {
 	<div class="alert alert-danger">@TempData["AlertMessage"]</div>
 }
-<h1>Reservations</h1>
-<a asp-action="GetUserReturnedReservations">Returned reservations</a> 
-@if(Model.Any())
-{
-	<table>
-		<thead>
-			<tr>
-				<th>
-					Book Title
-				</th>
-				<th>
-					ReservedAt
-				</th>
-				<th>
-					EndsAt
-				</th>
-				<th>
-					Return
-				</th>
-			</tr>
-		</thead>
-		<tbody>
-			@foreach (var reservation in Model)
-			{
+<div class="table-container">
+	<h1>Reservations</h1>
+	<a asp-action="GetUserReturnedReservations">Returned reservations</a>
+	@if (Model.Any())
+	{
+		<table>
+			<thead>
 				<tr>
-					<td>
-						@reservation.BookTitle
-					</td>
-					<td>
-						@reservation.ReservedAt
-					</td>
-					<td>
-						@reservation.EndsAt
-					</td>
-					<td>
-						<a asp-controller="ReservingBook" asp-action="ReturnBook" asp-route-Id="@reservation.Id">Return</a>
-					</td>
+					<th>
+						Book Title
+					</th>
+					<th>
+						Reserved At
+					</th>
+					<th>
+						EndsAt
+					</th>
+					<th>
+						Status
+					</th>
+					<th>
+						Return
+					</th>
 				</tr>
-			}
-		</tbody>
-	</table>
-}
-else
-{
-	<h3>No reservations is found</h3>
-}
+			</thead>
+			<tbody>
+				@foreach (var reservation in Model)
+				{
+					<tr>
+						<td data-label="Book Title">
+							@reservation.BookTitle
+						</td>
+						<td data-label="Reserved">
+							@reservation.ReservedAt
+						</td>
+						<td data-label="Due Date">
+							@reservation.EndsAt
+						</td>
+						<td data-label="Status">
+							@if (reservation.IsReturned)
+							{
+								<span class="badge badge-success">Returned</span>
+							}
+							else if (reservation.EndsAt < DateTime.Now)
+							{
+								<span class="badge badge-danger">Overdue</span>
+							}
+							else
+							{
+								<span class="badge badge-primary">Active</span>
+							}
+						</td>
+						<td>
+							<a asp-controller="ReservingBook" asp-action="ReturnBook" asp-route-Id="@reservation.Id">Return</a>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+	else
+	{
+		<div class="empty-state">
+			<h3>No reservations found</h3>
+		</div>
+	}
+</div>

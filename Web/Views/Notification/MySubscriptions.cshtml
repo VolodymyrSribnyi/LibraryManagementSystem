@@ -1,4 +1,7 @@
 ﻿@model IEnumerable<Application.DTOs.BookNotificationRequests.BookNotificationRequestDTO>
+<head>
+	<link rel="stylesheet" href="~/css/MySubscriptions.css" />
+</head>
 @if (TempData["SuccessMessage"] != null)
 {
 	<div class="alert alert-success">
@@ -15,49 +18,51 @@
 {
 	<div class="alert alert-danger">@TempData["AlertMessage"]</div>
 }
-<h1>My Subscriptions</h1>
 
-@if (Model.Any())
-{
-	<table>
-		<thead>
-			<tr>
-				<th>
-					Id
-				</th>
-				<th>
-					UserId
-				</th>
-				<th>
-					BookId
-				</th>
-				<th>
-					Unsubscribe
-				</th>
-			</tr>
-		</thead>
-		<tbody>
-			@foreach (var subscription in Model)
-			{
+<div class="table-container">
+	<h1>My Subscriptions</h1>
+
+	@if (Model.Any())
+	{
+		<table>
+			<thead>
 				<tr>
-					<td>
-						@subscription.Id
-					</td>
-					<td>
-						@subscription.UserId
-					</td>
-					<td>
-						@subscription.BookId
-					</td>
-					<td>
-						<a asp-controller="Notification" asp-action="UnsubscribeFromBook" asp-route-requestId="@subscription.Id">Unsubscribe</a>
-					</td>
+					<th>Subscription ID</th>
+					<th>User ID</th>
+					<th>Book ID</th>
+					<th>Action</th>
 				</tr>
-			}
-		</tbody>
-	</table>
-}
-else
-{
-	<h3>No subscriptions is found</h3>
-}
+			</thead>
+			<tbody>
+				@foreach (var subscription in Model)
+				{
+					<tr>
+						<td data-label="ID">
+							@subscription.Id
+						</td>
+						<td data-label="User ID">
+							@subscription.UserId
+						</td>
+						<td data-label="Book ID">
+							@subscription.BookId
+						</td>
+						<td data-label="Action">
+							<a asp-controller="Notification"
+							   asp-action="UnsubscribeFromBook"
+							   asp-route-requestId="@subscription.Id"
+							   class="btn-action btn-danger">
+								Unsubscribe
+							</a>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+	else
+	{
+		<div class="empty-state">
+			<h3>No subscriptions found</h3>
+		</div>
+	}
+</div>
