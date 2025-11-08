@@ -1,10 +1,12 @@
 ﻿using Abstractions.Repositories;
 using Application.DTOs.LibraryCards;
+using Application.ErrorHandling;
 using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Exceptions;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 
 
 namespace Infrastructure.Services
@@ -22,10 +24,13 @@ namespace Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<GetLibraryCardDTO> CreateAsync(Guid userId)
+        public async Task<Result<GetLibraryCardDTO>> CreateAsync(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException("userId");
+            {
+                _logger.LogError("UserId is empty");
+                return Result<GetLibraryCardDTO>.Failure(Errors.NullData);
+            }
 
             var libraryCardToCreate = new LibraryCard
             {
@@ -36,7 +41,8 @@ namespace Infrastructure.Services
 
             if (await _libraryCardRepository.IsExistsAsync(userId))
             {
-                throw new LibraryCardExistsException($"User with id {userId} has library card");
+                _logger.LogWarning($"User with id {userId} has library card");
+                return Result<GetLibraryCardDTO>.Failure(Errors.LibraryCardExists);
             }
 
             var createdLibraryCard = await _libraryCardRepository.CreateAsync(libraryCardToCreate);
@@ -47,20 +53,24 @@ namespace Infrastructure.Services
             }
 
             _logger.LogInformation("Library card successfully created");
-            return _mapper.Map<GetLibraryCardDTO>(createdLibraryCard);
+            return Result<GetLibraryCardDTO>.Success(_mapper.Map<GetLibraryCardDTO>(createdLibraryCard));
         }
 
 
-        public async Task<bool> DeleteAsync(Guid userId)
+        public async Task<Result> DeleteAsync(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException("userId");
+            {
+                _logger.LogError("UserId is empty");
+                return Result<GetLibraryCardDTO>.Failure(Errors.NullData);
+            }
 
             var libraryCardToDelete = await _libraryCardRepository.GetByUserIdAsync(userId);
 
             if (libraryCardToDelete == null)
             {
-                throw new LibraryCardNotFoundException($"Library card with userId {userId} not found.");
+                _logger.LogWarning($"Library card with userId {userId} not found.");
+                return Result.Failure(Errors.LibraryCardNotFound);
             }
 
             var result = await _libraryCardRepository.DeleteAsync(libraryCardToDelete.Id);
@@ -71,61 +81,79 @@ namespace Infrastructure.Services
             }
 
             _logger.LogInformation("Library card successfully deleted");
-            return true;
+            return Result.Success();
         }
 
-        public async Task<IEnumerable<GetLibraryCardDTO>> GetAllAsync()
+        public async Task<Result<IEnumerable<GetLibraryCardDTO>>> GetAllAsync()
         {
             var libraryCards = await _libraryCardRepository.GetAllAsync();
 
             if (libraryCards == null || !libraryCards.Any())
             {
                 _logger.LogWarning("No library cards found.");
-                return Enumerable.Empty<GetLibraryCardDTO>();
+                return Result<IEnumerable<GetLibraryCardDTO>>.Success(Enumerable.Empty<GetLibraryCardDTO>());
             }
 
-            return _mapper.Map<IEnumerable<GetLibraryCardDTO>>(libraryCards);
+            return Result<IEnumerable<GetLibraryCardDTO>>.Success(_mapper.Map<IEnumerable<GetLibraryCardDTO>>(libraryCards));
         }
 
-        public async Task<DateTime?> GetExpirationDateAsync(Guid userId)
+        public async Task<Result<DateTime?>> GetExpirationDateAsync(Guid userId)
         {
             if (userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId));
+            {
+                _logger.LogError("UserId is empty");
+                return Result<DateTime?>.Failure(Errors.NullData);
+            }
 
             var libraryCard = await _libraryCardRepository.GetByUserIdAsync(userId);
 
             if (libraryCard == null)
             {
-                throw new LibraryCardNotFoundException($"Library card with userId {userId} not found.");
+                _logger.LogWarning($"Library card with userId {userId} not found.");
+                return Result<DateTime?>.Failure(Errors.LibraryCardNotFound);
             }
 
-            return libraryCard.ValidTo;
+            return Result<DateTime?>.Success(libraryCard.ValidTo);
         }
 
-        public async Task<bool> IsActiveAsync(Guid userId)
+        public async Task<Result> IsActiveAsync(Guid userId)
         {
-            if(userId == Guid.Empty)
-                throw new ArgumentNullException(nameof(userId));
+            if (userId == Guid.Empty)
+            {
+                _logger.LogError("UserId is empty");
+                return Result<GetLibraryCardDTO>.Failure(Errors.NullData);
+            }
 
             var libraryCard = await _libraryCardRepository.GetByUserIdAsync(userId);
 
             if (libraryCard == null)
             {
-                throw new LibraryCardNotFoundException($"Library card with userId {userId} not found.");
+                _logger.LogWarning($"Library card with userId {userId} not found.");
+                return Result.Failure(Errors.LibraryCardNotFound);
             }
 
-            return libraryCard.IsValid && libraryCard.ValidTo > DateTime.UtcNow;
+            if (!libraryCard.IsValid || libraryCard.ValidTo <= DateTime.UtcNow)
+            {
+                _logger.LogInformation($"Library card with userId {userId} is not active.");
+                return Result.Failure(Errors.LibraryCardExpired);
+            }
+
+            return Result.Success();
         }
-        public async Task<GetLibraryCardDTO> UpdateAsync(UpdateLibraryCardDTO updateLibraryCardDTO)
+        public async Task<Result<GetLibraryCardDTO>> UpdateAsync(UpdateLibraryCardDTO updateLibraryCardDTO)
         {
             if (updateLibraryCardDTO == null)
-                throw new ArgumentNullException(nameof(updateLibraryCardDTO));
+            {
+                _logger.LogError("UpdateLibraryCardDTO is null");
+                return Result<GetLibraryCardDTO>.Failure(Errors.NullData);
+            }
 
             var libraryCard = await _libraryCardRepository.GetByUserIdAsync(updateLibraryCardDTO.UserId);
 
             if (libraryCard == null)
             {
-                throw new LibraryCardNotFoundException($"Library card with userId {updateLibraryCardDTO.UserId} not found.");
+                _logger.LogWarning($"Library card with userId {updateLibraryCardDTO.UserId} not found.");
+                return Result<GetLibraryCardDTO>.Failure(Errors.LibraryCardNotFound);
             }
 
             _mapper.Map(updateLibraryCardDTO, libraryCard);
@@ -134,11 +162,23 @@ namespace Infrastructure.Services
 
             if (updatedLibraryCard == null)
             {
-                throw new InvalidOperationException("Failed to update library card.");
+                _logger.LogWarning("Failed to update library card.");
+                return Result<GetLibraryCardDTO>.Failure(Errors.InvalidData);
             }
 
             _logger.LogInformation("Successfully updated library card");
-            return _mapper.Map<GetLibraryCardDTO>(updatedLibraryCard);
+            return Result<GetLibraryCardDTO>.Success(_mapper.Map<GetLibraryCardDTO>(updatedLibraryCard));
+        }
+        public async Task<Result<bool>> IsExistsAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                _logger.LogError("UserId is empty");
+                return Result<bool>.Failure(Errors.NullData);
+            }
+
+            var exists = await _libraryCardRepository.IsExistsAsync(userId);
+            return Result<bool>.Success(exists);
         }
     }
 }

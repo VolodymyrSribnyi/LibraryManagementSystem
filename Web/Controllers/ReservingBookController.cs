@@ -33,14 +33,14 @@ namespace Web.Controllers
                 return RedirectToAction("GetAllBooks", "Book");
             }
 
-            return View(new CreateReservationDTO { BookId = bookId,UserId = Guid.Parse(_userManager.GetUserId(HttpContext.User)),Book = book.Value });
+            return View(new CreateReservationDTO { BookId = bookId, UserId = Guid.Parse(_userManager.GetUserId(HttpContext.User)), Book = book.Value });
         }
         [HttpPost]
         [CustomAuthorize]
         public async Task<IActionResult> ReserveBook(CreateReservationDTO createReservationDTO)
         {
             var reservation = await _reservingBookService.ReserveBookAsync(createReservationDTO);
-            
+
             return RedirectToAction("GetUserActiveReservations");
         }
         [CustomAuthorize]

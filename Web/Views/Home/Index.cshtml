@@ -1,5 +1,61 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿<head>
+	<link rel="stylesheet" href="~/css/LibraryHome.css" />
+</head>
+@if (TempData["SuccessMessage"] != null)
+{
+	<div class="alert alert-success">
+		@TempData["SuccessMessage"]
+	</div>
 }
+@if (TempData["ErrorMessage"] != null)
+{
+	<div class="alert alert-danger">
+		@TempData["ErrorMessage"]
+	</div>
+}
+<div class="container">
+	<header>
+		<h1>📚 Alexandria Public Library</h1>
+		<p class="tagline">"Where Knowledge Meets Community"</p>
+	</header>
 
+	<div class="hero">
+		<h2>Welcome to Your Community Library</h2>
+		<div class="hero-buttons">
+			<a class="btn btn-secondary" asp-area="" asp-controller="Book" asp-action="GetAllBooks">Browse Catalog</a>
+			<a class="btn btn-secondary" asp-area="" asp-controller="LibraryCard" asp-action="AddLibraryCard">Get a Library Card</a>
+		</div>
+	</div>
+
+	<div class="info-grid">
+		<div class="info-card">
+			<h3>📍 Location & Contact</h3>
+			<p>
+				<strong>Address:</strong><br>
+				456 Knowledge Avenue<br>
+				Alexandria, VA 22314
+			</p>
+			<p><strong>Phone:</strong> (555) 123-4567</p>
+			<p><strong>Email:</strong> info@alexandrialibrary.org</p>
+		</div>
+
+		<div class="info-card">
+			<h3>🕐 Hours of Operation</h3>
+			<table class="hours-table">
+				<tr>
+					<td>Monday - Thursday</td>
+					<td>9:00 AM - 9:00 PM</td>
+				</tr>
+				<tr>
+					<td>Friday - Saturday</td>
+					<td>9:00 AM - 6:00 PM</td>
+				</tr>
+				<tr>
+					<td>Sunday</td>
+					<td>12:00 PM - 5:00 PM</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</div>
 

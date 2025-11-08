@@ -109,5 +109,32 @@ namespace Web.Controllers
             return View();
         }
 
+        [HttpGet]
+        [CustomAuthorize]
+        public async Task<IActionResult> UpdateUser()
+        {
+            var id = _userManager.GetUserId(HttpContext.User);
+            var user = await _userService.GetUserByIdAsync(Guid.Parse(id));
+            if (user.IsFailure)
+            {
+                TempData["ErrorMesage"] = user.Error.Description;
+                return RedirectToAction("AccountDashboard");
+            }
+            return View(user.Value);
+        }
+        [HttpPost]
+        [CustomAuthorize]
+        public async Task<IActionResult> UpdateUser(UpdateUserDTO updateUserDTO)
+        {
+            var result = await _userService.UpdateUserAsync(updateUserDTO);
+            if (result.IsFailure)
+            {
+                TempData["ErrorMesage"] = result.Error.Description;
+                return RedirectToAction("UpdateUser");
+            }
+            TempData["SuccessMessage"] = "Profile updated successfully.";
+            return RedirectToAction("AccountDashboard");
+        }
+
     }
 }

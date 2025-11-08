@@ -19,45 +19,64 @@ namespace Web.Controllers
             _libraryCardService = libraryCardService;
             _userManager = userManager;
         }
-        [CustomAuthorize(Policy = "AdminOnly")]
+        [CustomAuthorize]
         [HttpGet]
-        public async Task<IActionResult> CreateLibraryCard()
+        public async Task<IActionResult> AddLibraryCard()
         {
             var id = _userManager.GetUserId(HttpContext.User);
             var user = await _userManager.FindByIdAsync(id);
 
             return View(user);
         }
-        [CustomAuthorize(Policy = "AdminOnly")]
+        [CustomAuthorize]
         [HttpPost]
-        public async Task<IActionResult> CreateLibraryCard(Guid userId)
+        public async Task<IActionResult> AddLibraryCard(Guid userId)
         {
-            await _libraryCardService.CreateAsync(userId);
+            var result = await _libraryCardService.CreateAsync(userId);
 
-            return RedirectToAction("GetAllLibraryCards");
+            if (result.IsFailure)
+            {
+                TempData["ErrorMessage"] = result.Error.Description;
+                return RedirectToAction("AccountDashboard", "User");
+            }
+
+            return RedirectToAction("AccountDashboard","User");
         }
         [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
-        public IActionResult GetAllLibraryCards()
+        public async Task<IActionResult> GetAllLibraryCards()
         {
-            return View();
+            var libraryCards = await _libraryCardService.GetAllAsync();
+
+            return View(libraryCards.Value);
         }
         [HttpGet]
-        public IActionResult UpdateLibraryCard()
+        public async Task<IActionResult> UpdateLibraryCard()
         {
             return View();
         }
         [HttpPost]
         public async Task<IActionResult> UpdateLibraryCard(UpdateLibraryCardDTO updateLibraryCardDTO)
         {
-            await _libraryCardService.UpdateAsync(updateLibraryCardDTO);
-            return RedirectToAction("GetAllLibraryCards");
+            var result =  await _libraryCardService.UpdateAsync(updateLibraryCardDTO);
+
+            if (result.IsFailure)
+            {
+                TempData["ErrorMessage"] = result.Error.Description;
+                return RedirectToAction("UpdateLibraryCard");
+            }
+
+            return RedirectToAction("AccountDashboard", "User");
         }
         [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteLibraryCard(Guid userId)
         {
-            await _libraryCardService.DeleteAsync(userId);
-            return View();
+            var result = await _libraryCardService.DeleteAsync(userId);
+            if (result.IsFailure)
+            {
+                TempData["ErrorMessage"] = result.Error.Description;
+            }
+            return RedirectToAction("GetAllLibraryCards");
         }
 
     }

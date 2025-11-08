@@ -34,5 +34,8 @@ namespace Application.ErrorHandling
         public static readonly Error InvalidLoginAttempt = new Error("INVALID_LOGIN_ATTEMPT", "Invalid username or password.");
         public static readonly Error UserHasActiveReservations = new Error("USER_HAS_ACTIVE_RESERVATIONS", "The user has active reservations and cannot be deleted.");
         public static readonly Error NotificationDeletionFailed = new Error("NOTIFICATION_DELETION_FAILED", "Failed to delete the notification request.");
+        public static readonly Error LibraryCardNotFound = new Error("LIBRARY_CARD_NOT_FOUND", "The specified library card was not found.");
+        public static readonly Error LibraryCardExists = new Error("LIBRARY_CARD_EXISTS", "The library card already exists.");
+        public static readonly Error LibraryCardExpired = new Error("LIBRARY_CARD_EXPIRED", "The library card has expired.");
     }
 }

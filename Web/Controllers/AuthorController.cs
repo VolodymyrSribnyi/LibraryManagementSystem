@@ -13,6 +13,7 @@ namespace Web.Controllers
         {
             _authorService = authorService ?? throw new ArgumentNullException(nameof(authorService));
         }
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> GetAllAuthors()
         {
@@ -100,6 +101,7 @@ namespace Web.Controllers
             TempData["SuccessMessage"] = "Author deleted successfully!";
             return RedirectToAction("GetAllAuthors");
         }
+        [HttpGet]
         public async Task<IActionResult> GetAuthorByFullName(string surname)
         {
             var author = await _authorService.GetBySurnameAsync(surname);

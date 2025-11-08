@@ -20,9 +20,10 @@ namespace Infrastructure.Services
         private readonly IDomainEventPublisher _domainEventPublisher;
         private readonly IMapper _mapper;
         private readonly ILogger<ReservingBookService> _logger;
+        private readonly ILibraryCardService _libraryCardService;
         public ReservingBookService(IReservingBookRepository reservingBookRepository, IMapper mapper, IBookRepository bookRepository,
             UserManager<ApplicationUser> userManager, ILogger<ReservingBookService> logger, IDomainEventPublisher domainEventPublisher,
-            INotificationService notificationService)
+            INotificationService notificationService,ILibraryCardService libraryCardService)
         {
             _reservingBookRepository = reservingBookRepository;
             _mapper = mapper;
@@ -31,6 +32,7 @@ namespace Infrastructure.Services
             _domainEventPublisher = domainEventPublisher;
             _logger = logger;
             _notificationService = notificationService;
+            _libraryCardService = libraryCardService;
         }
         public async Task<Result<GetReservationDTO>> ReserveBookAsync(CreateReservationDTO createReservationDTO)
         {
@@ -63,6 +65,14 @@ namespace Infrastructure.Services
             {
                 _logger.LogInformation($"User with ID {reservationToCreate.UserId} not found.");
                 return Result<GetReservationDTO>.Failure(Errors.UserNotFound);
+            }
+
+            var librarycardExists = await _libraryCardService.IsExistsAsync(reservationToCreate.UserId);
+
+            if (!librarycardExists.Value)
+            {
+                _logger.LogInformation($"Library card for user ID {reservationToCreate.UserId} not found.");
+                return Result<GetReservationDTO>.Failure(Errors.LibraryCardNotFound);
             }
 
             var reservation = await _reservingBookRepository.ReserveBookAsync(reservationToCreate);

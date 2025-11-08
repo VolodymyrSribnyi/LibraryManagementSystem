@@ -15,7 +15,8 @@ namespace Domain.Entities
         public string Surname { get; set; }
         public string? MiddleName { get; set; }
         public int Age { get; set; }
-        public LibraryCard? LibraryCard { get; set; }
+        public Guid? LibraryCardId { get; set; }
+        public virtual LibraryCard? LibraryCard { get; set; }
         public List<Reservation> ReservedBooks { get; set; } = [];
         public List<Notification> Notifications { get; set; } = [];
         public List<BookNotificationRequest> BookSubscriptions { get; set; } = [];
