@@ -238,8 +238,8 @@ LibraryManagementSystem/
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/library-management-system.git
-cd library-management-system
+git clone https://github.com/VolodymyrSribnyi/LibraryManagementSystem.git
+cd LibraryManagementSystem
 ```
 
 2. **Configure the database connection**
