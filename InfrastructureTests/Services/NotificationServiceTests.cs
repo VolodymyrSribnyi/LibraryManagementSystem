@@ -1,6 +1,8 @@
 ﻿using Abstractions.Repositories;
+using Application.DTOs.Books;
 using Application.DTOs.Notitfications;
 using Application.ErrorHandling;
+using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Infrastructure.Services;
@@ -17,7 +19,7 @@ namespace InfrastructureTests.Services
     public class NotificationServiceTests
     {
         private readonly Mock<INotificationRepository> _notificationRepoMock;
-        private readonly Mock<IBookRepository> _bookRepoMock;
+        private readonly Mock<IBookService> _bookServiceMock;
         private readonly Mock<IReservingBookRepository> _reservingBookRepoMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<ILogger<NotificationService>> _loggerMock;
@@ -27,7 +29,7 @@ namespace InfrastructureTests.Services
         public NotificationServiceTests()
         {
             _notificationRepoMock = new Mock<INotificationRepository>();
-            _bookRepoMock = new Mock<IBookRepository>();
+            _bookServiceMock = new Mock<IBookService>();
             _reservingBookRepoMock = new Mock<IReservingBookRepository>();
             _mapperMock = new Mock<IMapper>();
             _loggerMock = new Mock<ILogger<NotificationService>>();
@@ -37,7 +39,7 @@ namespace InfrastructureTests.Services
                 _reservingBookRepoMock.Object,
                 _mapperMock.Object,
                 _loggerMock.Object,
-                _bookRepoMock.Object);
+                _bookServiceMock.Object);
         }
 
         // ---------------------------- //
@@ -206,7 +208,7 @@ namespace InfrastructureTests.Services
             var userId = Guid.NewGuid();
             var bookId = Guid.NewGuid();
 
-            _bookRepoMock.Setup(r => r.GetByIdAsync(bookId)).ReturnsAsync((Book)null);
+            _bookServiceMock.Setup(r => r.GetByIdAsync(bookId)).Returns(Task.FromResult(Result<GetBookDTO>.Failure(Errors.BookNotFound)));
 
             var result = await _service.SendBookAvailableNotificationAsync(userId, bookId);
 
@@ -222,8 +224,9 @@ namespace InfrastructureTests.Services
             var book = new Book { Id = bookId, Title = "Test Book" };
             var notification = new Notification();
             var mappedDto = new GetNotificationDTO();
+            var mappedBookDto = new GetBookDTO { Id = bookId, Title = "Test Book" };
 
-            _bookRepoMock.Setup(r => r.GetByIdAsync(bookId)).ReturnsAsync(book);
+            _bookServiceMock.Setup(r => r.GetByIdAsync(bookId)).Returns(Task.FromResult(Result<GetBookDTO>.Success(mappedBookDto)));
             _notificationRepoMock.Setup(r => r.CreateAsync(It.IsAny<Notification>()))
                                  .ReturnsAsync(notification);
             _mapperMock.Setup(m => m.Map<GetNotificationDTO>(notification))

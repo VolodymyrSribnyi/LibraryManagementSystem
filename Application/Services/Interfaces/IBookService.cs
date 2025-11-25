@@ -110,6 +110,6 @@ namespace Application.Services.Interfaces
         /// </summary>
         /// <param name="bookId">The unique identifier of the book whose picture to retrieve.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a byte array representing the book's picture data.</returns>
-        Task<Result<byte[]>> GetBookPictureAsync(Guid bookId);
+        Task<Result<string>> GetBookPictureAsync(Guid bookId);
     }
 }

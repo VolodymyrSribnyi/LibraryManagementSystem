@@ -6,6 +6,7 @@ using Application.Services.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -18,11 +19,13 @@ namespace Web.Controllers
     {
         private readonly IBookService _bookService;
         private readonly IAuthorService _authorService;
+        private readonly IBlobStorageService _blobStorageService;
 
-        public BookController(IBookService bookService, IAuthorService authorService)
+        public BookController(IBookService bookService, IAuthorService authorService, IBlobStorageService blobStorageService)
         {
             _bookService = bookService;
             _authorService = authorService;
+            _blobStorageService = blobStorageService;
         }
         [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
@@ -32,7 +35,7 @@ namespace Web.Controllers
 
             if (authorsResult.IsFailure)
             {
-                TempData["Error"] = authorsResult.Error.Description;
+                TempData["ErrorMessage"] = authorsResult.Error.Description;
                 return View(new CreateBookDTO { Authors = authorsResult.Value.ToList() });
             }
 
@@ -46,9 +49,10 @@ namespace Web.Controllers
 
             if (bookResult.IsFailure)
             {
-                TempData["Error"] = bookResult.Error.Description;
+                TempData["ErrorMessage"] = bookResult.Error.Description;
                 return RedirectToAction("AddBook");
             }
+            TempData["SuccessMessage"] = "Book added successfully!";
 
             return RedirectToAction("GetAllBooks");
         }
@@ -59,10 +63,11 @@ namespace Web.Controllers
 
             if (result.IsFailure)
             {
-                TempData["Error"] = result.Error.Description;
+                TempData["ErrorMessage"] = result.Error.Description;
                 return RedirectToAction("GetAllBooks");
             }
 
+            TempData["SuccessMessage"] = "Book deleted successfully!";
             return RedirectToAction("GetAllBooks");
         }
         [CustomAuthorize(Policy = "AdminOnly")]
@@ -71,9 +76,9 @@ namespace Web.Controllers
         {
             var bookResult = await _bookService.GetByIdAsync(bookId);
 
-            if(bookResult.IsFailure)
+            if (bookResult.IsFailure)
             {
-                TempData["Error"] = bookResult.Error.Description;
+                TempData["ErrorMessage"] = bookResult.Error.Description;
                 return RedirectToAction("GetAllBooks");
             }
 
@@ -81,7 +86,7 @@ namespace Web.Controllers
 
             if (authorsResult.IsFailure)
             {
-                TempData["Error"] = authorsResult.Error.Description;
+                TempData["ErrorMessage"] =  authorsResult.Error.Description;
                 return RedirectToAction("GetAllBooks");
             }
 
@@ -98,6 +103,7 @@ namespace Web.Controllers
                 AuthorId = book.Author.Id,
                 Authors = authorsResult.Value.ToList()
             };
+
             return View(updateBookDTO);
         }
         [CustomAuthorize(Policy = "AdminOnly")]
@@ -107,9 +113,11 @@ namespace Web.Controllers
             var updateResult = await _bookService.UpdateAsync(updateBookDTO);
             if (updateResult.IsFailure)
             {
-                TempData["Error"] = updateResult.Error.Description;
+                TempData["ErrorMessage"] = updateResult.Error.Description;
                 return RedirectToAction("UpdateBook", new { bookId = updateBookDTO.Id });
             }
+
+            TempData["SuccessMessage"] = "Book updated successfully!";
             return RedirectToAction("GetAllBooks");
         }
         [HttpPost]
@@ -119,7 +127,7 @@ namespace Web.Controllers
 
             if (ratingResult.IsFailure)
             {
-                TempData["Error"] = ratingResult.Error.Description;
+                TempData["ErrorMessage"] = ratingResult.Error.Description;
                 return RedirectToAction("GetBookById", new { id = updateBookDTO.BookId });
             }
             return RedirectToAction("GetAllBooks");
@@ -130,7 +138,7 @@ namespace Web.Controllers
             var result = await _bookService.UpdateAvailabilityAsync(updateBookStatusDTO);
             if (result.IsFailure)
             {
-                TempData["Error"] = result.Error.Description;
+                TempData["ErrorMessage"] = result.Error.Description;
                 return RedirectToAction("GetBookById", new { id = updateBookStatusDTO.BookId });
             }
             return Ok();
@@ -142,14 +150,14 @@ namespace Web.Controllers
 
             if (book.IsFailure)
             {
-                TempData["Error"] = book.Error.Description;
+                TempData["ErrorMessage"] = book.Error.Description;
                 return RedirectToAction("GetAllBooks");
             }
 
             return View("GetBookById", book.Value);
         }
         [HttpGet("books/{id}/picture")]
-        public async Task<IActionResult> GetPicture(Guid id)
+        public async Task<IActionResult> GetPictureUrl(Guid id)
         {
             var book = await _bookService.GetBookPictureAsync(id);
 
@@ -160,7 +168,15 @@ namespace Web.Controllers
 
             return File(book.Value, "image/jpeg");
         }
-        [HttpPost]
+        [HttpGet("test-url")]
+        public IActionResult TestBlobUrl()
+        {
+            var testBlobName = "23c0f5d4-6455-40d6-a5cb-d6b890bf20a3.jpeg"; // Use one of your actual blob names
+            var url = _blobStorageService.GetImageUrl(testBlobName, "book-images");
+
+            return Ok(new { url = url });
+        }
+        [HttpGet]
         public async Task<IActionResult> GetFilteredBooks(BookFilter bookFilter)
         {
             await PopulateViewBagAsync();
@@ -216,7 +232,7 @@ namespace Web.Controllers
 
             if (book.IsFailure)
             {
-                TempData["ErrorMessage"] = book.Error.Description;
+                ModelState.AddModelError("", book.Error.Description);
                 return RedirectToAction("GetAllBooks");
             }
 

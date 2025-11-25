@@ -1,4 +1,5 @@
 ﻿using Abstractions.Repositories;
+using Application.DTOs.Books;
 using Application.DTOs.Reservations;
 using Application.ErrorHandling;
 using Application.Services.Interfaces;
@@ -20,7 +21,8 @@ namespace InfrastructureTests.Services
     public class ReservingBookServiceTests
     {
         private readonly Mock<IReservingBookRepository> _reservingBookRepositoryMock = new();
-        private readonly Mock<IBookRepository> _bookRepositoryMock = new();
+        private readonly Mock<IBookService> _bookServiceMock = new();
+        private readonly Mock<ILibraryCardService> _libraryCardServiceMock = new();
         private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
         private readonly Mock<IMapper> _mapperMock = new();
         private readonly Mock<ILogger<ReservingBookService>> _loggerMock = new();
@@ -37,11 +39,12 @@ namespace InfrastructureTests.Services
             _service = new ReservingBookService(
                 _reservingBookRepositoryMock.Object,
                 _mapperMock.Object,
-                _bookRepositoryMock.Object,
+                _bookServiceMock.Object,
                 _userManagerMock.Object,
                 _loggerMock.Object,
                 _domainEventPublisherMock.Object,
-                _notificationServiceMock.Object
+                _notificationServiceMock.Object,
+                _libraryCardServiceMock.Object
             );
         }
 
@@ -55,10 +58,11 @@ namespace InfrastructureTests.Services
             var reservation = new Reservation { Id = Guid.NewGuid(), UserId = dto.UserId, BookId = dto.BookId };
             var user = new ApplicationUser { Id = dto.UserId };
             var book = new Book { Id = dto.BookId, Title = "Clean Code" };
+            var mappedBookDto = new GetBookDTO { Id = book.Id, Title = book.Title };
 
             _mapperMock.Setup(m => m.Map<Reservation>(dto)).Returns(reservation);
             _reservingBookRepositoryMock.Setup(r => r.IsReservationExists(reservation)).ReturnsAsync(false);
-            _bookRepositoryMock.Setup(r => r.GetByIdAsync(dto.BookId)).ReturnsAsync(book);
+            _bookServiceMock.Setup(r => r.GetByIdAsync(dto.BookId)).Returns(Task.FromResult(Result<GetBookDTO>.Success(mappedBookDto)));
             _userManagerMock.Setup(u => u.FindByIdAsync(dto.UserId.ToString())).ReturnsAsync(user);
             _reservingBookRepositoryMock.Setup(r => r.ReserveBookAsync(reservation)).ReturnsAsync(reservation);
             _mapperMock.Setup(m => m.Map<GetReservationDTO>(reservation)).Returns(new GetReservationDTO { Id = reservation.Id });
@@ -93,7 +97,7 @@ namespace InfrastructureTests.Services
 
             _mapperMock.Setup(m => m.Map<Reservation>(dto)).Returns(reservation);
             _reservingBookRepositoryMock.Setup(r => r.IsReservationExists(reservation)).ReturnsAsync(false);
-            _bookRepositoryMock.Setup(r => r.GetByIdAsync(dto.BookId)).ReturnsAsync((Book?)null);
+            _bookServiceMock.Setup(r => r.GetByIdAsync(dto.BookId)).Returns(Task.FromResult(Result<GetBookDTO>.Failure(Errors.BookNotFound)));
 
             var result = await _service.ReserveBookAsync(dto);
 
@@ -107,10 +111,10 @@ namespace InfrastructureTests.Services
             var dto = new CreateReservationDTO { UserId = Guid.NewGuid(), BookId = Guid.NewGuid() };
             var reservation = new Reservation { UserId = dto.UserId, BookId = dto.BookId };
             var book = new Book { Id = dto.BookId };
-
+            var mappedBookDto = new GetBookDTO { Id = book.Id, Title = book.Title };
             _mapperMock.Setup(m => m.Map<Reservation>(dto)).Returns(reservation);
             _reservingBookRepositoryMock.Setup(r => r.IsReservationExists(reservation)).ReturnsAsync(false);
-            _bookRepositoryMock.Setup(r => r.GetByIdAsync(dto.BookId)).ReturnsAsync(book);
+            _bookServiceMock.Setup(r => r.GetByIdAsync(dto.BookId)).Returns(Task.FromResult(Result<GetBookDTO>.Success(mappedBookDto)));
             _userManagerMock.Setup(u => u.FindByIdAsync(dto.UserId.ToString())).ReturnsAsync((ApplicationUser?)null);
 
             var result = await _service.ReserveBookAsync(dto);
@@ -127,9 +131,9 @@ namespace InfrastructureTests.Services
         {
             var reservationId = Guid.NewGuid();
             var reservation = new Reservation { Id = reservationId, BookId = Guid.NewGuid(), Book = new Book { Id = Guid.NewGuid(), Title = "Book" } };
-
+            var mappedBookDto = new GetBookDTO { Id = reservation.Book.Id, Title = reservation.Book.Title };
             _reservingBookRepositoryMock.Setup(r => r.GetByIdAsync(reservationId)).ReturnsAsync(reservation);
-            _bookRepositoryMock.Setup(r => r.GetByIdAsync(reservation.BookId)).ReturnsAsync(reservation.Book);
+            _bookServiceMock.Setup(r => r.GetByIdAsync(reservation.BookId)).ReturnsAsync(Result<GetBookDTO>.Success(mappedBookDto));
             _reservingBookRepositoryMock.Setup(r => r.ReturnBookAsync(reservationId)).ReturnsAsync(true);
 
             var result = await _service.ReturnBookAsync(reservationId);

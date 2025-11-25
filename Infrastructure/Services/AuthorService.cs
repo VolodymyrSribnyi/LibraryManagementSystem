@@ -38,11 +38,11 @@ namespace Infrastructure.Services
             }
 
             var authorToCreate = _mapper.Map<Author>(createAuthorDTO);
-            var existingAuthor = await _authorRepository.GetByIdAsync(authorToCreate.Id);
+            var existingAuthor = await _authorRepository.Exists(createAuthorDTO.FirstName,createAuthorDTO.Surname);
 
             if (existingAuthor != null)
             {
-                _logger.LogInformation($"{Errors.AuthorExists.Code} Author with id {authorToCreate.Id} already exists");
+                _logger.LogInformation($"{Errors.AuthorExists.Code} Author with name {authorToCreate.FirstName} {authorToCreate.Surname} already exists");
                 return Result<GetAuthorDTO>.Failure(Errors.AuthorExists);
             }
 

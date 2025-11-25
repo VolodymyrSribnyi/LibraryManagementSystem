@@ -28,9 +28,7 @@
 		<table>
 			<thead>
 				<tr>
-					<th>Subscription ID</th>
-					<th>User ID</th>
-					<th>Book ID</th>
+					<th>Book</th>
 					<th>Action</th>
 				</tr>
 			</thead>
@@ -38,14 +36,8 @@
 				@foreach (var subscription in Model)
 				{
 					<tr>
-						<td data-label="ID">
-							@subscription.Id
-						</td>
-						<td data-label="User ID">
-							@subscription.UserId
-						</td>
 						<td data-label="Book ID">
-							@subscription.BookId
+							@subscription.BookTitle
 						</td>
 						<td data-label="Action">
 							<a asp-controller="Notification"

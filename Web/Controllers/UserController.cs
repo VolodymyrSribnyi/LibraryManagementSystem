@@ -33,11 +33,11 @@ namespace Web.Controllers
 
             if (userResult.IsFailure)
             {
-                TempData["ErrorMesage"] = userResult.Error.Description;
+                ModelState.AddModelError("", userResult.Error.Description);
                 return View(createUserDTO);
             }
 
-            return RedirectToAction("GetAllUsers", "User");
+            return RedirectToAction("Login", "User");
         }
         [HttpGet]
         public IActionResult Login()
@@ -48,12 +48,16 @@ namespace Web.Controllers
         public async Task<IActionResult> Login(LoginUserDTO loginUserDTO)
         {
             var user = await _userService.AuthenticateAsync(loginUserDTO);
+            if (user.IsSuccess && user.Value.UserName.Equals("admin"))
+            {
+                return RedirectToAction("AdminDashboard", "Admin");
+            }
             if (user.IsSuccess)
             {
                 return View("AccountDashboard", user.Value);
             }
 
-            TempData["ErrorMessage"] = user.Error.Description;
+            ModelState.AddModelError("", user.Error.Description);
             return View(loginUserDTO);
         }
         [HttpPost]
@@ -64,7 +68,7 @@ namespace Web.Controllers
 
             if (result.IsFailure)
             {
-                TempData["ErrorMesage"] = result.Error.Description;
+                ModelState.AddModelError("", result.Error.Description);
                 return RedirectToAction("AccountDashboard", "User");
             }
 
@@ -87,7 +91,7 @@ namespace Web.Controllers
 
             if (user.IsFailure)
             {
-                TempData["ErrorMesage"] = user.Error.Description;
+                ModelState.AddModelError("", user.Error.Description);
                 return RedirectToAction("AccountDashboard");
             }
 
@@ -117,7 +121,7 @@ namespace Web.Controllers
             var user = await _userService.GetUserByIdAsync(Guid.Parse(id));
             if (user.IsFailure)
             {
-                TempData["ErrorMesage"] = user.Error.Description;
+                ModelState.AddModelError("", user.Error.Description);
                 return RedirectToAction("AccountDashboard");
             }
             return View(user.Value);
@@ -129,7 +133,7 @@ namespace Web.Controllers
             var result = await _userService.UpdateUserAsync(updateUserDTO);
             if (result.IsFailure)
             {
-                TempData["ErrorMesage"] = result.Error.Description;
+                ModelState.AddModelError("", result.Error.Description);
                 return RedirectToAction("UpdateUser");
             }
             TempData["SuccessMessage"] = "Profile updated successfully.";

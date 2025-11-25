@@ -33,6 +33,13 @@ namespace Infrastructure.Repositories
             return true;
         }
 
+        public async Task<Author> Exists(string firstName, string surname)
+        {
+            var exists = await Get(a => a.FirstName == firstName && a.Surname == surname);
+
+            return exists;
+        }
+
         public async Task<Author> Get(Expression<Func<Author, bool>> filter, string? includeProperties = null)
         {
             IQueryable<Author> query = _libraryContext.Set<Author>();

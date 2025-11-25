@@ -14,20 +14,20 @@ namespace Infrastructure.Services
     public class ReservingBookService : IReservingBookService
     {
         private readonly IReservingBookRepository _reservingBookRepository;
-        private readonly IBookRepository _bookRepository;
+        private readonly IBookService _bookService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly INotificationService _notificationService;
         private readonly IDomainEventPublisher _domainEventPublisher;
         private readonly IMapper _mapper;
         private readonly ILogger<ReservingBookService> _logger;
         private readonly ILibraryCardService _libraryCardService;
-        public ReservingBookService(IReservingBookRepository reservingBookRepository, IMapper mapper, IBookRepository bookRepository,
+        public ReservingBookService(IReservingBookRepository reservingBookRepository, IMapper mapper, IBookService bookService,
             UserManager<ApplicationUser> userManager, ILogger<ReservingBookService> logger, IDomainEventPublisher domainEventPublisher,
             INotificationService notificationService,ILibraryCardService libraryCardService)
         {
             _reservingBookRepository = reservingBookRepository;
             _mapper = mapper;
-            _bookRepository = bookRepository;
+            _bookService = bookService;
             _userManager = userManager;
             _domainEventPublisher = domainEventPublisher;
             _logger = logger;
@@ -51,7 +51,7 @@ namespace Infrastructure.Services
                 return Result<GetReservationDTO>.Failure(Errors.ReservationExists);
             }
 
-            var bookToReserve = await _bookRepository.GetByIdAsync(reservationToCreate.BookId);
+            var bookToReserve = await _bookService.GetByIdAsync(reservationToCreate.BookId);
 
             if (bookToReserve == null)
             {
@@ -83,7 +83,7 @@ namespace Infrastructure.Services
                 return Result<GetReservationDTO>.Failure(Errors.ReservationCreationFailed);
             }
 
-            await _notificationService.SendReservationConfirmationAsync(reservation.Id, user.Id, bookToReserve.Id);
+            await _notificationService.SendReservationConfirmationAsync(reservation.Id, user.Id, bookToReserve.Value.Id);
 
             _logger.LogInformation($"Successfully created reservation with ID: {reservation.Id}");
             return Result<GetReservationDTO>.Success(_mapper.Map<GetReservationDTO>(reservation));
@@ -104,13 +104,20 @@ namespace Infrastructure.Services
                 return Result.Failure(Errors.ReservationNotFound);
             }
 
-            reservationToCancel.Book = await _bookRepository.GetByIdAsync(reservationToCancel.BookId);
+            var bookToReturn = await _bookService.GetByIdAsync(reservationToCancel.BookId);
 
-            if (reservationToCancel.Book == null)
+            if (bookToReturn.Value == null)
             {
                 _logger.LogWarning($"Book with ID {reservationToCancel.BookId} not found for reservation {id}.");
                 return Result.Failure(Errors.BookNotFound);
             }
+            var bookToReturnValue = bookToReturn.Value;
+
+            var bookToReturnID = bookToReturnValue.Id;
+            //var reservationToCancelDomainBook =  _mapper.Map<Book>( bookToReturn.Value);
+
+            //reservationToCancel.Book = reservationToCancelDomainBook;
+            //reservationToCancel.Book = _mapper.Map<Book>(bookToReturnValue);
 
             var result = await _reservingBookRepository.ReturnBookAsync(id);
 

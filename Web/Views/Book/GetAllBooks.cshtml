@@ -30,7 +30,7 @@
 			</div>
 			<button type="submit" class="btn btn-primary">Search by title</button>
 		</form>
-		<form asp-action="GetFilteredBooks" method="post" class="filter-group">
+		<form asp-action="GetFilteredBooks" method="get" class="filter-group">
 			<div class="filter-group">
 				<label for="Authors">Author</label>
 				<select id="AuthorsId" name="AuthorsId" multiple>
@@ -87,9 +87,10 @@
 		{
 			<div class="book-card">
 				<div class="book-image">
-					@if (book.PictureUrl != null)
+
+					@if (!string.IsNullOrEmpty(book.PictureUrl))
 					{
-						<img src="@book.PictureUrl" alt="Book Cover" class="book-cover" />
+						<img src="@book.PictureUrl" alt="@book.Title" class="book-cover" />
 					}
 					else
 					{

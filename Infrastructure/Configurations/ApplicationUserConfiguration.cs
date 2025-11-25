@@ -25,6 +25,8 @@ namespace Infrastructure.Configurations
 
             builder.Property(u => u.Surname).HasMaxLength(50).IsRequired(false);
 
+            builder.Property(u => u.LibraryCardId).IsRequired(false);
+
             builder.Property(u => u.CreatedAt)
                .ValueGeneratedOnAdd();
 
@@ -55,9 +57,6 @@ namespace Infrastructure.Configurations
                 .WithOne(bnr => bnr.User)
                 .HasForeignKey(bnr => bnr.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-
-
         }
     }
 }

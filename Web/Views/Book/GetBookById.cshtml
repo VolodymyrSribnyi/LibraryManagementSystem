@@ -14,12 +14,16 @@
 		@TempData["ErrorMessage"]
 	</div>
 }
+@if (TempData["AlertMessage"] != null)
+{
+	<div class="alert alert-danger">@TempData["AlertMessage"]</div>
+}
 <div class="book-detail-container">
 	<div class="book-header">
 		<div style="display: flex; gap: 40px; flex: 1;">
 			<div class="book-image-section">
 				<div class="book-image-wrapper">
-					@if (Model.PictureUrl != null)
+					@if (!string.IsNullOrEmpty(Model.PictureUrl))
 					{
 						<img src="@Model.PictureUrl" alt="Book Cover" style="max-width:200px; max-height:300px;" />
 					}
@@ -104,8 +108,14 @@
 			<button type="submit" class="submit-rating-btn">Submit Rating</button>
 		</form>
 	</div>
-	<div>
-		<a class="delete-button asp-controller="Book" asp-action="DeleteBook" asp-route-id="@Model.Id">Delete</a>
-	</div>
+	@if (User.IsInRole("Admin"))
+	{
+		<div>
+			<a class="delete-button asp-controller="Book" asp-action="DeleteBook" asp-route-id="@Model.Id">Delete</a>
+		</div>
+		<div>
+			<a class="edit-button" asp-controller="Book" asp-action="UpdateBook" asp-route-id="@Model.Id">Edit</a>
+		</div>
+	}
 </div>
 

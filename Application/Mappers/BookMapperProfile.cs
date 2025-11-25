@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.Books;
+using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using System;
@@ -13,12 +14,16 @@ namespace Application.Mappers
     {
         public BookMapperProfile()
         {
-            CreateMap<CreateBookDTO, Book>();
+            CreateMap<CreateBookDTO, Book>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.PictureBlobName, opt => opt.Ignore());
             CreateMap<Book, GetBookDTO>()
-                .ForMember(dest => dest.PictureUrl,
-                opt => opt.MapFrom(src => $"/books/{src.Id}/picture"));
+                .ForMember(dest => dest.PictureUrl, opt => opt.Ignore());
+            CreateMap<GetBookDTO, Book>()
+                /*.ForMember(dest => dest.Author).Ignore()*/;
             CreateMap<UpdateBookDTO, Book>();
             CreateMap<Book, UpdateBookDTO>();
+
         }
     }
 }

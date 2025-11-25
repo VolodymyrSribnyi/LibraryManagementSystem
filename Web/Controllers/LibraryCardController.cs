@@ -1,6 +1,8 @@
 ﻿using Application.DTOs.LibraryCards;
+using Application.DTOs.Users;
 using Application.Services.Interfaces;
 using Domain.Entities;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +15,13 @@ namespace Web.Controllers
     {
         private readonly ILibraryCardService _libraryCardService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IUserService _userService;
 
-        public LibraryCardController(ILibraryCardService libraryCardService,UserManager<ApplicationUser> userManager)
+        public LibraryCardController(ILibraryCardService libraryCardService,UserManager<ApplicationUser> userManager,IUserService userService)
         {
             _libraryCardService = libraryCardService;
             _userManager = userManager;
+            _userService = userService;
         }
         [CustomAuthorize]
         [HttpGet]
@@ -30,16 +34,22 @@ namespace Web.Controllers
         }
         [CustomAuthorize]
         [HttpPost]
-        public async Task<IActionResult> AddLibraryCard(Guid userId)
+        public async Task<IActionResult> AddLibraryCard(UpdateUserDTO getUserDTO)
         {
+            
+            var userId = getUserDTO.Id;
+
             var result = await _libraryCardService.CreateAsync(userId);
 
             if (result.IsFailure)
             {
-                TempData["ErrorMessage"] = result.Error.Description;
+                ModelState.AddModelError("", result.Error.Description);
                 return RedirectToAction("AccountDashboard", "User");
             }
 
+            getUserDTO.LibraryCardId = result.Value.Id;
+            await _userService.UpdateUserAsync(getUserDTO);
+            TempData["SuccessMessage"] = "LibraryCard added successfully!";
             return RedirectToAction("AccountDashboard","User");
         }
         [CustomAuthorize(Policy = "AdminOnly")]
@@ -55,6 +65,7 @@ namespace Web.Controllers
         {
             return View();
         }
+        [CustomAuthorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> UpdateLibraryCard(UpdateLibraryCardDTO updateLibraryCardDTO)
         {
@@ -62,19 +73,20 @@ namespace Web.Controllers
 
             if (result.IsFailure)
             {
-                TempData["ErrorMessage"] = result.Error.Description;
+                ModelState.AddModelError("", result.Error.Description);
                 return RedirectToAction("UpdateLibraryCard");
             }
 
+            TempData["SuccessMessage"] = "LibraryCard updated successfully!";
             return RedirectToAction("AccountDashboard", "User");
         }
-        [Authorize(Policy = "AdminOnly")]
+        [CustomAuthorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteLibraryCard(Guid userId)
         {
             var result = await _libraryCardService.DeleteAsync(userId);
             if (result.IsFailure)
             {
-                TempData["ErrorMessage"] = result.Error.Description;
+                ModelState.AddModelError("", result.Error.Description);
             }
             return RedirectToAction("GetAllLibraryCards");
         }

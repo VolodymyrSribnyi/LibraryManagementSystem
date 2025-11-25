@@ -155,7 +155,7 @@ namespace Infrastructure.Repositories
             bookToUpdate.Rating = book.Rating;
             bookToUpdate.IsDeleted = book.IsDeleted;
             bookToUpdate.CreatedAt = book.CreatedAt;
-            bookToUpdate.PictureSource = book.PictureSource;
+            //bookToUpdate.PictureSource = book.PictureSource;
             bookToUpdate.Description = book.Description;
             //bookToUpdate.LastUpdatedAt = DateTime.UtcNow;
 

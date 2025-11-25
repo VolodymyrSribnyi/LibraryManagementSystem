@@ -69,5 +69,6 @@ namespace Abstractions.Repositories
         /// <returns>A task that represents the asynchronous operation. The task result contains an  <see cref="IEnumerable{T}"/>
         /// of <see cref="Author"/> objects representing all authors.</returns>
         Task<IEnumerable<Author>> GetAllAsync();
+        Task<Author> Exists(string firstName, string surname);
     }
 }

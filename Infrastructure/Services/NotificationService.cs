@@ -20,19 +20,19 @@ namespace Infrastructure.Services
     public class NotificationService : INotificationService
     {
         private readonly INotificationRepository _notificationRepository;
-        private readonly IReservingBookRepository _reservationRepository;
-        private readonly IBookRepository _bookRepository;
+        private readonly IReservingBookRepository _reservingBookRepository;
+        private readonly IBookService _bookService;
         private readonly IMapper _mapper;
         private readonly ILogger<NotificationService> _logger;
 
         public NotificationService(INotificationRepository notificationRepository, IReservingBookRepository reservingBookRepository,
-            IMapper mapper, ILogger<NotificationService> logger, IBookRepository bookRepository)
+            IMapper mapper, ILogger<NotificationService> logger, IBookService bookService)
         {
             _notificationRepository = notificationRepository ?? throw new ArgumentNullException(nameof(notificationRepository));
-            _reservationRepository = reservingBookRepository ?? throw new ArgumentNullException(nameof(reservingBookRepository));
+            _reservingBookRepository = reservingBookRepository ?? throw new ArgumentNullException(nameof(reservingBookRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
+            _bookService = bookService ?? throw new ArgumentNullException(nameof(bookService));
         }
 
         public async Task<Result<GetNotificationDTO>> CreateNotification(CreateNotificationDTO createNotificationDTO)
@@ -118,17 +118,17 @@ namespace Infrastructure.Services
                 return Result<GetNotificationDTO>.Failure(Errors.NullData);
             }
 
-            var book = await _bookRepository.GetByIdAsync(bookId);
+            var book = await _bookService.GetByIdAsync(bookId);
 
-            if (book == null)
+            if (book.Value == null)
             {
                 _logger.LogInformation($"Book with ID {bookId} not found.");
                 return Result<GetNotificationDTO>.Failure(Errors.BookNotFound);
             }
 
-            var notification = await SendAsync(userId, bookId, $"The book '{book.Title}' you requested is now available.", NotificationType.BookAvailable);
+            var notification = await SendAsync(userId, bookId, $"The book '{book.Value.Title}' you requested is now available.", NotificationType.BookAvailable);
 
-            _logger.LogInformation($"Successfully sent book available notification for book '{book.Title}' to user {userId}");
+            _logger.LogInformation($"Successfully sent book available notification for book '{book.Value.Title}' to user {userId}");
             return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(notification.Value));
         }
 
@@ -140,7 +140,7 @@ namespace Infrastructure.Services
                 return Result<GetNotificationDTO>.Failure(Errors.NullData);
             }
 
-            var reservation = await _reservationRepository.GetByIdAsync(reservationId);
+            var reservation = await _reservingBookRepository.GetByIdAsync(reservationId);
 
             if (reservation == null)
             {
@@ -148,12 +148,20 @@ namespace Infrastructure.Services
                 return Result<GetNotificationDTO>.Failure(Errors.ReservationNotFound);
             }
 
+            var reservationBook = await _bookService.GetByIdAsync(reservation.BookId);
+
+            if (reservationBook.Value == null)
+            {
+                _logger.LogInformation($"Book with id {reservation.BookId} is not found");
+                return Result<GetNotificationDTO>.Failure(Errors.BookNotFound);
+            }
+
             var notification = new Notification
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 BookId = bookId,
-                Message = $"Your reservation of '{reservation.Book.Title}' has been confirmed.",
+                Message = $"Your reservation of '{reservationBook.Value.Title}' has been confirmed.",
                 NotificationType = NotificationType.ReservationConfirmation,
                 CreatedAt = DateTime.UtcNow,
                 IsRead = false
@@ -178,15 +186,15 @@ namespace Infrastructure.Services
                 return Result<GetNotificationDTO>.Failure(Errors.NullData);
             }
 
-            var book = await _bookRepository.GetByIdAsync(bookId);
+            var book = await _bookService.GetByIdAsync(bookId);
 
-            if (book == null)
+            if (book.Value == null)
             {
                 _logger.LogInformation($"Book with ID {bookId} not found.");
                 return Result<GetNotificationDTO>.Failure(Errors.BookNotFound);
             }
 
-            var notification = await SendAsync(userId, bookId, $"This is a reminder that your borrowed book '{book.Title}' is due soon.", NotificationType.BookDueReminder);
+            var notification = await SendAsync(userId, bookId, $"This is a reminder that your borrowed book '{book.Value.Title}' is due soon.", NotificationType.BookDueReminder);
 
             _logger.LogInformation($"Successfully sent book due reminder for book {bookId} to user {userId}");
             return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(notification.Value));
@@ -199,15 +207,15 @@ namespace Infrastructure.Services
                 return Result<GetNotificationDTO>.Failure(Errors.NullData);
             }
 
-            var book = await _bookRepository.GetByIdAsync(bookId);
+            var book = await _bookService.GetByIdAsync(bookId);
 
-            if (book == null)
+            if (book.Value == null)
             {
                 _logger.LogInformation($"Book with ID {bookId} not found.");
                 return Result<GetNotificationDTO>.Failure(Errors.BookNotFound);
             }
 
-            var notification = await SendAsync(userId, bookId, $"A new book '{book.Title}' has arrived that you might be interested in.", NotificationType.NewBookArrival);
+            var notification = await SendAsync(userId, bookId, $"A new book '{book.Value.Title}' has arrived that you might be interested in.", NotificationType.NewBookArrival);
 
             _logger.LogInformation($"Successfully sent new book arrival notification for book {bookId} to user {userId}");
             return Result<GetNotificationDTO>.Success(_mapper.Map<GetNotificationDTO>(notification.Value));

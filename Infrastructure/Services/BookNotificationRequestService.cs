@@ -14,14 +14,6 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Services
 {
-    /// <summary>
-    /// Provides functionality for managing book notification requests, including creating subscriptions,  retrieving
-    /// subscribers, and managing notification statuses.
-    /// </summary>
-    /// <remarks>This service acts as a mediator between the book-related operations and the repository layer,
-    /// ensuring that business rules are enforced when handling book notification requests. It includes  methods for
-    /// creating subscriptions, checking subscription status, retrieving unnotified subscribers,  and managing
-    /// notification states.</remarks>
     public class BookNotificationRequestService : IBookNotificationRequestService
     {
         private readonly IBookService _bookService;

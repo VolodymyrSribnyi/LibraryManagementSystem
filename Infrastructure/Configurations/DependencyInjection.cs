@@ -60,6 +60,8 @@ namespace Infrastructure.Configurations
             services.AddScoped<IDomainEventHandler<BookBecameAvailableEvent>, BookAvailabilityNotificationHandler>();
             services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
 
+            services.AddScoped<IBlobStorageService, BlobStorageService>();
+
             return services;
         }
     }

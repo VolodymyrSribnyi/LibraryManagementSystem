@@ -1,4 +1,5 @@
 ﻿using Application.DTOs.Authors;
+using Application.ErrorHandling;
 using Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,43 +35,38 @@ namespace Web.Controllers
             var authorResult = await _authorService.AddAsync(createAuthorDTO);
             if(authorResult.IsFailure)
             {
-                TempData["ErrorMessage"] = authorResult.Error.Description;
+                ModelState.AddModelError("", authorResult.Error.Description);
                 return View(createAuthorDTO);
             }
             TempData["SuccessMessage"] = "Author added successfully!";
             return RedirectToAction("GetAllAuthors");
         }
         [HttpGet]
-        public IActionResult GetAuthorsId()
-        {
-            return View();
-        }
-        [HttpGet]
         public async Task<IActionResult> GetAuthorById(Guid id)
         {
-            var author = await _authorService.GetByIdAsync(id);
+            var authorResult = await _authorService.GetByIdAsync(id);
 
-            if(author.IsFailure)
+            if(authorResult.IsFailure)
             {
-                TempData["ErrorMessage"] = author.Error.Description;
+                ModelState.AddModelError("", authorResult.Error.Description);
                 return View("GetAllAuthors");
             }
 
-            return View("GetAuthorById", author.Value);
+            return View("GetAuthorById", authorResult.Value);
         }
         [CustomAuthorize(Policy = "AdminOnly")]
         [HttpGet]
         public async Task<IActionResult> UpdateAuthor(Guid id)
         {
-            var author = await _authorService.GetByIdAsync(id);
+            var authorResult = await _authorService.GetByIdAsync(id);
 
-            if(author.IsFailure)
+            if(authorResult.IsFailure)
             {
-                TempData["ErrorMessage"] = author.Error.Description;
+                ModelState.AddModelError("", authorResult.Error.Description);
                 return RedirectToAction("GetAllAuthors");
             }
 
-            return View(_authorService.MapToUpdateAuthorDTO(author.Value));
+            return View(_authorService.MapToUpdateAuthorDTO(authorResult.Value));
         }
         [CustomAuthorize(Policy = "AdminOnly")]
         [HttpPost]
@@ -80,7 +76,7 @@ namespace Web.Controllers
 
             if(authorResult.IsFailure)
             {
-                TempData["ErrorMessage"] = authorResult.Error.Description;
+                ModelState.AddModelError("", authorResult.Error.Description);
                 return View(updateAuthorDTO);
             }
 
@@ -94,8 +90,8 @@ namespace Web.Controllers
 
             if(authorResult.IsFailure)
             {
-                TempData["ErrorMessage"] = authorResult.Error.Description;
-                return RedirectToAction("GetAllAuthors");
+                ModelState.AddModelError("", authorResult.Error.Description);
+                return RedirectToAction("GetAuthorById",id);
             }
 
             TempData["SuccessMessage"] = "Author deleted successfully!";

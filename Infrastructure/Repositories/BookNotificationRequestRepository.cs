@@ -60,6 +60,11 @@ namespace Infrastructure.Repositories
                 .Where(r => r.UserId == userId)
                 .ToListAsync();
 
+            foreach (var subscription in subscriptions)
+            {
+                subscription.Book = await _libraryContext.Books.FirstOrDefaultAsync(b => b.Id == subscription.BookId);
+            }
+
             return subscriptions;
         }
 

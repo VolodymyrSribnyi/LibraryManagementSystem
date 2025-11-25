@@ -13,6 +13,10 @@
 		@TempData["ErrorMessage"]
 	</div>
 }
+@if (TempData["AlertMessage"] != null)
+{
+	<div class="alert alert-danger">@TempData["AlertMessage"]</div>
+}
 <div class="container">
 	<header>
 		<h1>📚 Alexandria Public Library</h1>

@@ -10,23 +10,28 @@ using Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
+using static System.Reflection.Metadata.BlobBuilder;
 
 namespace Infrastructure.Services
 {
     public class BookService : IBookService
     {
         private readonly IBookRepository _bookRepository;
+        private readonly IBlobStorageService _blobStorageService;
         private readonly IMapper _mapper;
         private readonly ILogger<BookService> _logger;
-        private readonly IAuthorRepository _authorRepository;
-        private const int _pictureSize = 2097152; // 2MB
+        private readonly IAuthorService _authorService;
+        private const int _pictureSize = 2097152;
+        private const string BookImageContainer = "book-images";
 
-        public BookService(IBookRepository bookRepository, IMapper mapper, ILogger<BookService> logger, IAuthorRepository authorRepository)
+        public BookService(IBookRepository bookRepository, IMapper mapper, ILogger<BookService> logger, IAuthorService authorService,
+            IBlobStorageService blobStorageService)
         {
             _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(_mapper));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _authorRepository = authorRepository ?? throw new ArgumentNullException(nameof(authorRepository));
+            _authorService = authorService ?? throw new ArgumentNullException(nameof(authorService));
+            _blobStorageService = blobStorageService;
         }
 
         public async Task<Result<GetBookDTO>> AddAsync(CreateBookDTO createBookDTO)
@@ -46,26 +51,42 @@ namespace Infrastructure.Services
                 return Result<GetBookDTO>.Failure(Errors.BookExists);
             }
 
-            var existingAuthor = await _authorRepository.GetByIdAsync(createBookDTO.AuthorId);
+            var existingAuthor = await _authorService.GetByIdAsync(createBookDTO.AuthorId);
 
+            if (existingAuthor == null)
+            {
+                _logger.LogWarning($"Author with id: {createBookDTO.AuthorId} doesn't exist");
+                return Result<GetBookDTO>.Failure(Errors.AuthorNotFound);
+
+            }
 
             if (createBookDTO.Picture != null)
             {
-                var pictureResult = await ConvertIFormFileToByteArray(createBookDTO.Picture);
+                var blobName = await _blobStorageService.UploadImageAsync(createBookDTO.Picture, BookImageContainer);
+                bookToCreate.PictureBlobName = blobName;
+                bookToCreate.PictureUrl = _blobStorageService.GetImageUrl(blobName, BookImageContainer);
 
-                if (pictureResult.IsFailure)
-                {
-                    _logger.LogWarning($"Failed to convert picture: {pictureResult.Error.Description}");
-                    return Result<GetBookDTO>.Failure(pictureResult.Error);
-                }
+                //var pictureResult = await ConvertIFormFileToByteArray(createBookDTO.Picture);
 
-                bookToCreate.PictureSource = pictureResult.Value;
+                //if (pictureResult.IsFailure)
+                //{
+                //    _logger.LogWarning($"Failed to convert picture: {pictureResult.Error.Description}");
+                //    return Result<GetBookDTO>.Failure(pictureResult.Error);
+                //}
+
+                //bookToCreate.PictureSource = pictureResult.Value;
             }
 
             var book = await _bookRepository.AddAsync(bookToCreate);
 
             if (book == null)
             {
+                if (!string.IsNullOrEmpty(bookToCreate.PictureBlobName))
+                {
+                    await _blobStorageService.DeleteImageAsync(
+                        bookToCreate.PictureBlobName,
+                        BookImageContainer);
+                }
                 _logger.LogError($"Failed to create book with title: {createBookDTO.Title}");
                 return Result<GetBookDTO>.Failure(Errors.BookCreationFailed);
             }
@@ -109,21 +130,38 @@ namespace Infrastructure.Services
                 _logger.LogInformation($"Book with title '{updateBookDTO.Title}' not found.");
                 return Result<GetBookDTO>.Failure(Errors.BookNotFound);
             }
+            if (bookToUpdate.PictureBlobName == null)
+            {
+                var blobName = await _blobStorageService.UploadImageAsync(updateBookDTO.Picture, BookImageContainer);
+                bookToUpdate.PictureBlobName = blobName; bookToUpdate.PictureBlobName = string.Empty;
+            }
 
+            string oldBlobName = bookToUpdate.PictureBlobName;
             updateBookDTO.Id = bookToUpdate.Id;
             _mapper.Map(updateBookDTO, bookToUpdate);
 
             if (updateBookDTO.Picture != null)
             {
-                var pictureResult = await ConvertIFormFileToByteArray(updateBookDTO.Picture);
+                var blobName = await _blobStorageService.UploadImageAsync(updateBookDTO.Picture, BookImageContainer);
+                bookToUpdate.PictureBlobName = blobName;
+                bookToUpdate.PictureUrl = _blobStorageService.GetImageUrl(blobName, BookImageContainer);
 
-                if (pictureResult.IsFailure)
+                // Delete old image after successful upload
+                if (!string.IsNullOrEmpty(oldBlobName))
                 {
-                    _logger.LogWarning($"Failed to convert picture during update: {pictureResult.Error.Description}");
-                    return Result<GetBookDTO>.Failure(pictureResult.Error);
+                    await _blobStorageService.DeleteImageAsync(
+                        oldBlobName,
+                        BookImageContainer);
                 }
+                //var pictureResult = await ConvertIFormFileToByteArray(updateBookDTO.Picture);
 
-                bookToUpdate.PictureSource = pictureResult.Value;
+                //if (pictureResult.IsFailure)
+                //{
+                //    _logger.LogWarning($"Failed to convert picture during update: {pictureResult.Error.Description}");
+                //    return Result<GetBookDTO>.Failure(pictureResult.Error);
+                //}
+
+                //bookToUpdate.PictureSource = pictureResult.Value;
             }
 
             var updatedBook = await _bookRepository.UpdateAsync(bookToUpdate);
@@ -147,6 +185,13 @@ namespace Infrastructure.Services
             {
                 _logger.LogInformation($"Book with ID {id} not found for deletion.");
                 return Result.Failure(Errors.BookNotFound);
+            }
+
+            if (!string.IsNullOrEmpty(bookToDelete.PictureBlobName))
+            {
+                await _blobStorageService.DeleteImageAsync(
+                    bookToDelete.PictureBlobName,
+                    BookImageContainer);
             }
 
             var result = await _bookRepository.DeleteAsync(bookToDelete.Id);
@@ -176,7 +221,17 @@ namespace Infrastructure.Services
                 return Result<GetBookDTO>.Failure(Errors.BookNotFound);
             }
 
-            return Result<GetBookDTO>.Success(_mapper.Map<GetBookDTO>(book));
+            string imageUrl = string.Empty;
+
+            if (!string.IsNullOrEmpty(book.PictureBlobName))
+            {
+                imageUrl = _blobStorageService.GetImageUrl(book.PictureBlobName, "book-images");
+            }
+
+            var getBookDTO = _mapper.Map<GetBookDTO>(book);
+            getBookDTO.PictureUrl = imageUrl;
+
+            return Result<GetBookDTO>.Success(getBookDTO);
         }
         public async Task<Result<IEnumerable<GetBookDTO>>> GetAllAsync()
         {
@@ -188,7 +243,76 @@ namespace Infrastructure.Services
                 return Result<IEnumerable<GetBookDTO>>.Success(Enumerable.Empty<GetBookDTO>());
             }
 
-            return Result<IEnumerable<GetBookDTO>>.Success(_mapper.Map<IEnumerable<GetBookDTO>>(books));
+            foreach (var book in books)
+            {
+                if (!string.IsNullOrEmpty(book.PictureBlobName))
+                {
+                    book.PictureUrl = _blobStorageService.GetImageUrl(book.PictureBlobName, BookImageContainer);
+                }
+            }
+            var bookDTOs = _mapper.Map<IEnumerable<GetBookDTO>>(books);
+            foreach (var bookDTO in bookDTOs)
+            {
+                var correspondingBook = books.FirstOrDefault(b => b.Id == bookDTO.Id);
+                if (correspondingBook != null)
+                {
+                    bookDTO.PictureUrl = correspondingBook.PictureUrl;
+                }
+            }
+
+            return Result<IEnumerable<GetBookDTO>>.Success(bookDTOs);
+        }
+        public async Task<Result<IEnumerable<GetBookDTO>>> GetFilteredAsync(BookFilter bookFilter)
+        {
+            if (bookFilter == null)
+            {
+                _logger.LogWarning("GetFilteredAsync called with null BookFilter.");
+                return Result<IEnumerable<GetBookDTO>>.Success(Enumerable.Empty<GetBookDTO>());
+            }
+
+            bool? isAvailable = null;
+
+            if (!string.IsNullOrEmpty(bookFilter.IsAvailable))
+            {
+                isAvailable = bool.Parse(bookFilter.IsAvailable);
+            }
+
+            Expression<Func<Book, bool>> expr = b =>
+                (bookFilter.Years == null || !bookFilter.Years.Any() || bookFilter.Years.Contains(b.PublishingYear)) &&
+                (bookFilter.Genres == null || !bookFilter.Genres.Any() || bookFilter.Genres.Contains(b.Genre)) &&
+                (bookFilter.Publishers == null || !bookFilter.Publishers.Any() || bookFilter.Publishers.Contains(b.Publisher)) &&
+                (!bookFilter.MinRating.HasValue || b.Rating >= bookFilter.MinRating) &&
+                (bookFilter.AuthorsId == null || !bookFilter.AuthorsId.Any() || bookFilter.AuthorsId.Contains(b.AuthorId)) &&
+                (!isAvailable.HasValue || b.IsAvailable == isAvailable);
+
+            var filteredBooks = await _bookRepository.GetFilteredAsync(expr);
+
+            if (filteredBooks == null || !filteredBooks.Any())
+            {
+                _logger.LogInformation("No books found matching the specified filter criteria.");
+                return Result<IEnumerable<GetBookDTO>>.Success(Enumerable.Empty<GetBookDTO>());
+            }
+
+            foreach (var book in filteredBooks)
+            {
+                if (!string.IsNullOrEmpty(book.PictureBlobName))
+                {
+                    book.PictureUrl = _blobStorageService.GetImageUrl(book.PictureBlobName, BookImageContainer);
+                }
+            }
+
+            var bookDTOs = _mapper.Map<IEnumerable<GetBookDTO>>(filteredBooks);
+
+            foreach (var bookDTO in bookDTOs)
+            {
+                var correspondingBook = filteredBooks.FirstOrDefault(b => b.Id == bookDTO.Id);
+                if (correspondingBook != null)
+                {
+                    bookDTO.PictureUrl = correspondingBook.PictureUrl;
+                }
+            }
+
+            return Result<IEnumerable<GetBookDTO>>.Success(bookDTOs);
         }
 
         public async Task<Result<IEnumerable<GetBookDTO>>> GetAllByAuthorAsync(GetAuthorDTO getAuthorDTO)
@@ -345,45 +469,13 @@ namespace Infrastructure.Services
             return Result.Success();
         }
 
-        public async Task<Result<IEnumerable<GetBookDTO>>> GetFilteredAsync(BookFilter bookFilter)
-        {
-            if (bookFilter == null)
-            {
-                _logger.LogWarning("GetFilteredAsync called with null BookFilter.");
-                return Result<IEnumerable<GetBookDTO>>.Success(Enumerable.Empty<GetBookDTO>());
-            }
-
-            bool? isAvailable = null;
-
-            if (!string.IsNullOrEmpty(bookFilter.IsAvailable))
-            {
-                isAvailable = bool.Parse(bookFilter.IsAvailable);
-            }
-
-            Expression<Func<Book, bool>> expr = b =>
-                (bookFilter.Years == null || !bookFilter.Years.Any() || bookFilter.Years.Contains(b.PublishingYear)) &&
-                (bookFilter.Genres == null || !bookFilter.Genres.Any() || bookFilter.Genres.Contains(b.Genre)) &&
-                (bookFilter.Publishers == null || !bookFilter.Publishers.Any() || bookFilter.Publishers.Contains(b.Publisher)) &&
-                (!bookFilter.MinRating.HasValue || b.Rating >= bookFilter.MinRating) &&
-                (bookFilter.AuthorsId == null || !bookFilter.AuthorsId.Any() || bookFilter.AuthorsId.Contains(b.AuthorId)) &&
-                (!isAvailable.HasValue || b.IsAvailable == isAvailable);
-
-            var filteredBooks = await _bookRepository.GetFilteredAsync(expr);
-
-            if (filteredBooks == null || !filteredBooks.Any())
-            {
-                _logger.LogInformation("No books found matching the specified filter criteria.");
-                return Result<IEnumerable<GetBookDTO>>.Success(Enumerable.Empty<GetBookDTO>());
-            }
-
-            return Result<IEnumerable<GetBookDTO>>.Success(_mapper.Map<IEnumerable<GetBookDTO>>(filteredBooks));
-        }
-        public async Task<Result<byte[]>> GetBookPictureAsync(Guid bookId)
+        
+        public async Task<Result<string>> GetBookPictureAsync(Guid bookId)
         {
             if (bookId == Guid.Empty)
             {
                 _logger.LogWarning("GetBookPictureAsync called with empty GUID.");
-                return Result<byte[]>.Failure(Errors.NullData);
+                return Result<string>.Failure(Errors.NullData);
             }
 
             var book = await _bookRepository.GetByIdAsync(bookId);
@@ -391,16 +483,21 @@ namespace Infrastructure.Services
             if (book == null)
             {
                 _logger.LogInformation($"Book with ID {bookId} not found when retrieving picture.");
-                return Result<byte[]>.Failure(Errors.BookNotFound);
+                return Result<string>.Failure(Errors.BookNotFound);
             }
 
-            if (book.PictureSource == null || book.PictureSource.Length == 0)
+            if (string.IsNullOrEmpty(book.PictureBlobName))
             {
                 _logger.LogInformation($"Book with ID {bookId} has no picture.");
-                return Result<byte[]>.Failure(Errors.PictureNotFound);
+                return Result<string>.Failure(Errors.PictureNotFound);
             }
 
-            return Result<byte[]>.Success(book.PictureSource);
+            var imageUrl = _blobStorageService.GetImageUrl(
+                book.PictureBlobName,
+                BookImageContainer ?? "book-images"
+            );
+
+            return Result<string>.Success(imageUrl);
         }
     }
 }

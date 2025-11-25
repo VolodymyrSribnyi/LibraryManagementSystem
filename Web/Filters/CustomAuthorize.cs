@@ -31,7 +31,7 @@ namespace Web.Filters
                 {
                     controller.TempData["AlertMessage"] = "You must be logged in to perform this action.";
 
-                    context.Result = new RedirectToActionResult("GetAllBooks", "Book", null);
+                    context.Result = new RedirectToActionResult("Index", "Home", null);
                 }
             }
             else if (!string.IsNullOrEmpty(Policy))
@@ -45,7 +45,7 @@ namespace Web.Filters
                     if (controller != null)
                     {
                         controller.TempData["AlertMessage"] = "You do not have permission to perform this action.";
-                        context.Result = new RedirectToActionResult("GetAllBooks", "Book", null);
+                        context.Result = new RedirectToActionResult("Index", "Home", null);
                     }
                 }
             }

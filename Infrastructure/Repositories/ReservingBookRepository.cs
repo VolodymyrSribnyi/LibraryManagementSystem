@@ -56,7 +56,8 @@ namespace Infrastructure.Repositories
         {
             _libraryContext.Reservations.AsNoTracking();
 
-            var reservations = await _libraryContext.Reservations.ToListAsync();
+            var reservations = await _libraryContext.Reservations.Include(r => r.Book).
+                ToListAsync();
 
             return reservations;
         }

@@ -32,8 +32,7 @@ namespace Web.Controllers
 
             if (!result.IsSuccess)
             {
-                TempData["ErrorMessage"] = result.Error.Description;
-                // Handle error (e.g., show an error message to the user)
+                ModelState.AddModelError("", result.Error.Description);
                 return RedirectToAction("GetAllBooks","Book");
             }
             var subscriptions = await _bookRequestService.GetUserSubscriptionsAsync(userId);
@@ -46,8 +45,7 @@ namespace Web.Controllers
 
             if(result.IsFailure)
             {
-                TempData["ErrorMessage"] = result.Error.Description;
-                // Handle error (e.g., show an error message to the user)
+                ModelState.AddModelError("", result.Error.Description);
                 return RedirectToAction("MySubscriptions");
             }
             return RedirectToAction("AccountDashboard", "User");
@@ -60,8 +58,7 @@ namespace Web.Controllers
 
             if (subscriptions.IsFailure)
             {
-                TempData["ErrorMessage"] = subscriptions.Error.Description;
-                // Handle error (e.g., show an error message to the user)
+                ModelState.AddModelError("", subscriptions.Error.Description);
                 return RedirectToAction("AccountDashboard", "User");
             }
             return View(subscriptions.Value);

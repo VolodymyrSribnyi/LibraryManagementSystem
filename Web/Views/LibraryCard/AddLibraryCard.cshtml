@@ -33,6 +33,11 @@
 				<label asp-for="MiddleName" class="control-label optional-label"></label>
 				<input asp-for="MiddleName" class="form-control" value="@Model.MiddleName" />
 			</div>
+			<div class="form-group">
+				<label asp-for="Age" class="control-label"></label>
+				<input type="number" asp-for="Age" class="form-control" value="@Model.Age" />
+				<span asp-validation-for="Age" class="text-danger"></span>
+			</div>
 
 			<div class="form-group">
 				<input type="submit" value="Add Library Card" class="btn btn-primary" />

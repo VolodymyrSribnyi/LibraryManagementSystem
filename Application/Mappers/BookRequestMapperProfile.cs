@@ -16,7 +16,8 @@ namespace Application.Mappers
             CreateMap<BookNotificationRequest, BookNotificationRequestDTO>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
-                .ForMember(dest => dest.BookId, opt => opt.MapFrom(src => src.BookId));
+                .ForMember(dest => dest.BookId, opt => opt.MapFrom(src => src.BookId))
+                .ForMember(dest => dest.BookTitle, opt => opt.MapFrom(src => src.Book != null ? src.Book.Title : string.Empty));
 
             CreateMap<BookNotificationRequestDTO, BookNotificationRequest>()
                 .ForMember(dest => dest.User, opt => opt.Ignore())

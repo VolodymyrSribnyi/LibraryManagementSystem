@@ -1,6 +1,8 @@
 ﻿using Abstractions.Repositories;
+using Application.DTOs.Authors;
 using Application.DTOs.Books;
 using Application.ErrorHandling;
+using Application.Services.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Infrastructure.Services;
@@ -18,7 +20,8 @@ namespace InfrastructureTests.Services
     public class BookServiceTests
     {
         private readonly Mock<IBookRepository> _bookRepositoryMock;
-        private readonly Mock<IAuthorRepository> _authorRepositoryMock;
+        private readonly Mock<IAuthorService> _authorServiceMock;
+        private readonly Mock<IBlobStorageService> _blobStorageServiceMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<ILogger<BookService>> _loggerMock;
         private readonly BookService _bookService;
@@ -26,7 +29,8 @@ namespace InfrastructureTests.Services
         public BookServiceTests()
         {
             _bookRepositoryMock = new Mock<IBookRepository>();
-            _authorRepositoryMock = new Mock<IAuthorRepository>();
+            _authorServiceMock = new Mock<IAuthorService>();
+            _blobStorageServiceMock = new Mock<IBlobStorageService>();
             _mapperMock = new Mock<IMapper>();
             _loggerMock = new Mock<ILogger<BookService>>();
 
@@ -34,7 +38,8 @@ namespace InfrastructureTests.Services
                 _bookRepositoryMock.Object,
                 _mapperMock.Object,
                 _loggerMock.Object,
-                _authorRepositoryMock.Object);
+                _authorServiceMock.Object,
+                _blobStorageServiceMock.Object);
         }
 
         // -------------------- ADD --------------------
@@ -87,8 +92,8 @@ namespace InfrastructureTests.Services
             _mapperMock.Setup(m => m.Map<Book>(dto)).Returns(mappedBook);
             _bookRepositoryMock.Setup(r => r.GetByTitleAsync("New Book"))
                 .ReturnsAsync((Book)null);
-            _authorRepositoryMock.Setup(r => r.GetByIdAsync(dto.AuthorId))
-                .ReturnsAsync(new Author { Id = dto.AuthorId });
+            _authorServiceMock.Setup(r => r.GetByIdAsync(dto.AuthorId))
+                .Returns(Task.FromResult(Result<GetAuthorDTO>.Success(new GetAuthorDTO { Id = dto.AuthorId })));
             _bookRepositoryMock.Setup(r => r.AddAsync(mappedBook))
                 .ReturnsAsync(addedBook);
             _mapperMock.Setup(m => m.Map<GetBookDTO>(addedBook))
@@ -113,8 +118,14 @@ namespace InfrastructureTests.Services
             _mapperMock.Setup(m => m.Map<Book>(dto)).Returns(mappedBook);
             _bookRepositoryMock.Setup(r => r.GetByTitleAsync("Failed Book"))
                 .ReturnsAsync((Book)null);
-            _authorRepositoryMock.Setup(r => r.GetByIdAsync(dto.AuthorId))
-                .ReturnsAsync(new Author { Id = dto.AuthorId });
+            // Replace this line:
+            // _authorServiceMock.Setup(r => r.GetByIdAsync(dto.AuthorId))
+            //     .ReturnsAsync(new GetAuthorDTO { Id = dto.AuthorId });
+
+            // With this:
+            _authorServiceMock.Setup(r => r.GetByIdAsync(dto.AuthorId))
+                .Returns(Task.FromResult(Result<GetAuthorDTO>.Success(new GetAuthorDTO { Id = dto.AuthorId })));
+
             _bookRepositoryMock.Setup(r => r.AddAsync(mappedBook))
                 .ReturnsAsync((Book)null);
 

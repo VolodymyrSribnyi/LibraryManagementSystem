@@ -1,5 +1,5 @@
 ﻿<head>
-	<link rel="stylesheet" href="~/css/AccountDashboard.css" />
+	<link rel="stylesheet" href="~/css/AdminDashboard.css" />
 </head>
 @if (TempData["AlertMessage"] != null)
 {
@@ -19,7 +19,7 @@
 					<a asp-controller="Book" asp-action="GetAllBooks">Manage Books</a>
 					<a asp-controller="Author" asp-action="GetAllAuthors">Manage Authors</a>
 					<a asp-controller="User" asp-action="GetAllUsers">Manage Users</a>
-					<a asp-controller="Reservation" asp-action="ViewAllReservations">View All Reservations</a>
+					<a asp-controller="ReservingBook" asp-action="GetAllReservations">View All Reservations</a>
 				</div>
 				<div class="auth-actions">
 					<form method="post" asp-controller="User" asp-action="Logout">

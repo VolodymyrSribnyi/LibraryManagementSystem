@@ -1,4 +1,5 @@
-﻿using Application.DTOs.Reservations;
+﻿using Application.DTOs.Books;
+using Application.DTOs.Reservations;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -29,7 +30,7 @@ namespace Web.Controllers
 
             if (book.IsFailure)
             {
-                TempData["Error"] = book.Error.Description;
+                TempData["ErrorMessage"] = book.Error.Description;
                 return RedirectToAction("GetAllBooks", "Book");
             }
 
@@ -39,14 +40,20 @@ namespace Web.Controllers
         [CustomAuthorize]
         public async Task<IActionResult> ReserveBook(CreateReservationDTO createReservationDTO)
         {
-            var reservation = await _reservingBookService.ReserveBookAsync(createReservationDTO);
+            var result = await _reservingBookService.ReserveBookAsync(createReservationDTO);
+
+            if (result.IsFailure)
+            {
+                TempData["ErrorMessage"] = result.Error.Description;
+                return RedirectToAction("GetBookById","Book",new { id = createReservationDTO.BookId });
+            }
 
             return RedirectToAction("GetUserActiveReservations");
         }
         [CustomAuthorize]
         public async Task<IActionResult> ReturnBook(Guid Id)
         {
-            var reservation = await _reservingBookService.ReturnBookAsync(Id);
+            await _reservingBookService.ReturnBookAsync(Id);
 
             return RedirectToAction("GetUserActiveReservations");
         }
@@ -58,7 +65,7 @@ namespace Web.Controllers
 
             if (reservation.IsFailure)
             {
-                TempData["Error"] = reservation.Error.Description;
+                TempData["ErrorMessage"] = reservation.Error.Description;
                 return RedirectToAction("GetAllBooks", "Book");
             }
 
